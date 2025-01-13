@@ -1,0 +1,7 @@
+name = "QEPO"
+uuid = "d3aafb98-fe74-4c3d-b8db-562b666564c8"
+authors = ["xoth42 "]
+version = "0.1.0"
+
+[deps]
+BPGates = "2c1a90cd-bec4-4415-ae35-245016909a8f"
