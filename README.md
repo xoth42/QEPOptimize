@@ -1,7 +1,7 @@
 ## Quantum Entanglement Purification Optimizer
 
 
-This repository is intended to organize and reform the code from QuantumHardware and qevo_optimizer,and qevo, while being readable, extendable, and abstracted as much as possible for ease of later advancements. 
+This repository is intended to organize and reform the code from QuantumHardware, qevo_optimizer, and qevo, while being readable, extendable, and abstracted as much as possible for ease of later advancements. 
 
 # Building Plan:
 
