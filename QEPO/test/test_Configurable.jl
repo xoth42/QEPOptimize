@@ -1,8 +1,8 @@
 using Test
 using CSV
 using DataFrames
-include("../src/Configurable.jl")
-using .Configurable
+using QEPO.Configurable
+
 # Mock data for testing
 mock_calibration_data = """
 Qubit,T1 (us),T2 (us),Readout assignment error ,CNOT error ,Gate time (ns)
@@ -18,17 +18,28 @@ end
 
 # Create a mock HardwareConfiguration
 mock_hardware_config = HardwareConfiguration(mock_calibration_file, Dict())
-Configurable.DEFAULT_ADVANCED_CONFIG()
-myConfig = Configurable.DEFAULT_CONFIGURATION(mock_hardware_config,DEFAULT_ADVANCED_CONFIG())
+mock_config = DEFAULT_CONFIGURATION(mock_hardware_config,DEFAULT_ADVANCED_CONFIG())
+
+# Define a small tolerance for floating-point comparisons
+tolerance = 1e-5
 
 # Test the update_hardware_data! function
 @testset "update_hardware_data!" begin
     Configurable.update_hardware_data!(mock_config)
     hardware_config = Configurable.get_hardware_config(mock_config)
     calibration_data = Configurable.get_calibration_data(hardware_config)
-
-    @test calibration_data[0] == (T1=50e-6, T2=60e-6, readout_error=0.01)
-    @test calibration_data[1] == (T1=55e-6, T2=65e-6, readout_error=0.02)
-    @test calibration_data[(0, 1)] == (two_qubit_error=0.02, gate_time=200e-9)
-    @test calibration_data[(1, 0)] == (two_qubit_error=0.03, gate_time=210e-9)
+    
+    @test isapprox(calibration_data[0].T1, 50e-6, atol=tolerance)
+    @test isapprox(calibration_data[0].T2, 60e-6, atol=tolerance)
+    @test isapprox(calibration_data[0].readout_error, 0.01, atol=tolerance)
+    
+    @test isapprox(calibration_data[1].T1, 55e-6, atol=tolerance)
+    @test isapprox(calibration_data[1].T2, 65e-6, atol=tolerance)
+    @test isapprox(calibration_data[1].readout_error, 0.02, atol=tolerance)
+    
+    @test isapprox(calibration_data[(0, 1)].two_qubit_error, 0.02, atol=tolerance)
+    @test isapprox(calibration_data[(0, 1)].gate_time, 200e-9, atol=tolerance)
+    
+    @test isapprox(calibration_data[(1, 0)].two_qubit_error, 0.03, atol=tolerance)
+    @test isapprox(calibration_data[(1, 0)].gate_time, 210e-9, atol=tolerance)
 end
