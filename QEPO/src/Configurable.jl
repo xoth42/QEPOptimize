@@ -1,10 +1,10 @@
 # TODO: default configurations
 # TODO: methods for creating configurations
-# TODO: delete NOTES
+# TODO: delete NOTES?
 # TODO: document all functions, create docs
 # TODO: store default configs somewhere else?
 # TODO: Make sure these work well as the defaults
-
+# TODO update exports?
 
 """NOTES: 
 # function abc(a::AdvancedConfiguration)
@@ -34,15 +34,15 @@ module Configurable
     """What the optimizer uses to define success """
     @enum  CostFunction logical_qubit_fidelity purified_pairs_fidelity average_marginal_fidelity
     
-    export CostFunction
+    export CostFunction, logical_qubit_fidelity, purified_pairs_fidelity, average_marginal_fidelity
     export AbstractConfiguration, AbstractHardwareConfiguration, AbstractAdvancedConfiguration
     export HardwareConfiguration, AdvancedConfiguration, Configuration
     export get_num_simulations, get_raw_bell_pairs, get_purified_pairs, get_num_registers, get_optimize_for, get_max_gen, get_max_ops, get_hardware_config, get_advanced_config
     export set_num_simulations!, set_raw_bell_pairs!, set_purified_pairs!, set_num_registers!, set_optimize_for!, set_max_gen!, set_max_ops!, set_hardware_config!, set_advanced_config!
     export get_calibration_data_path, get_calibration_data, get_valid_qubits
     export set_calibration_data_path!, set_calibration_data!, set_valid_qubits!
-    export get_population_size, get_starting_pop_multiplier, get_starting_ops, get_pairs, get_children_per_pair, get_mutants_per_individual_per_type, get_p_lose_operation, get_p_add_operation, get_p_swap_operations, get_p_mutate_operations
-    export set_population_size!, set_starting_pop_multiplier!, set_starting_ops!, set_pairs!, set_children_per_pair!, set_mutants_per_individual_per_type!, set_p_lose_operation!, set_p_add_operation!, set_p_swap_operations!, set_p_mutate_operations!
+    export get_population_size, get_starting_pop_multiplier, get_starting_ops, get_pairs, get_children_per_pair, get_mutants_per_individual_per_type, get_p_lose_operation, get_p_add_operation, get_p_swap_operation, get_p_mutate_operation
+    export set_population_size!, set_starting_pop_multiplier!, set_starting_ops!, set_pairs!, set_children_per_pair!, set_mutants_per_individual_per_type!, set_p_lose_operation!, set_p_add_operation!, set_p_swap_operation!, set_p_mutate_operation!
     export get_code_distance, get_communication_fidelity_in, set_code_distance!, set_communication_fidelity_in!
     export DEFAULT_HARDWARE_CONFIG, DEFAULT_ADVANCED_CONFIG, DEFAULT_CONFIGURATION, read_calibration_data, update_hardware_data!
 
@@ -55,12 +55,13 @@ module Configurable
     """
         HardwareConfiguration
 
-    Configuration specific to given hardware, used in the circuit simulation.
+        Configuration specific to given hardware, used in the circuit simulation.
 
-    # Fields
-    - `calibration_data_path::String`: Path to the CSV file containing IBM calibration data.
-    - `calibration_data::Dict{Any,Any}`: Dictionary containing the calibration data.
-    - `valid_qubits::Array{Int}`: Array of integers representing the valid qubits."""
+        # Fields
+        - `calibration_data_path::String`: Path to the CSV file containing IBM calibration data.
+        - `calibration_data::Dict{Any,Any}`: Dictionary containing the calibration data.
+        - `valid_qubits::Array{Int}`: Array of integers representing the valid qubits.
+    """
     mutable struct HardwareConfiguration <: AbstractHardwareConfiguration
         calibration_data_path::String # Path to the csv file containing IBM calibration data
         calibration_data::Dict{Any,Any}
@@ -71,21 +72,22 @@ module Configurable
     """
         AdvancedConfiguration
 
-    Additional optimizer configurations. Normally can be left alone.
+        Additional optimizer configurations. Normally can be left alone.
 
-    # Fields
-    - `code_distance::Int`: For the Genetic optimizer, used for logical_qubit_fidelity.
-    - `communication_fidelity_in::Float64`: Fidelity that is being generated at communication qubits. 0.9 would be appropriate (f_in).
-    - `population_size::Int`: Target number of individuals in the population for each generation after initialization.
-    - `starting_pop_multiplier::Int`: A multiplier used to determine the size of the initial population.
-    - `starting_ops::Int`: Initial number of operations in each individual circuit of the population.
-    - `pairs::Int`: Number of parent pairs selected for breeding new individuals.
-    - `children_per_pair::Int`: Number of offspring produced by each pair of parents.
-    - `mutants_per_individual_per_type::Int`: Number of mutations applied to each individual for each mutation type.
-    - `p_lose_operation::Float64`: Probability of losing an operation during optimization.
-    - `p_add_operation::Float64`: Probability of adding an operation during optimization.
-    - `p_swap_operations::Float64`: Probability of swapping operations during optimization.
-    - `p_mutate_operations::Float64`: Probability of mutating operations during optimization."""
+        # Fields
+        - `code_distance::Int`: For the Genetic optimizer, used for logical_qubit_fidelity.
+        - `communication_fidelity_in::Float64`: Fidelity that is being generated at communication qubits. 0.9 would be appropriate (f_in).
+        - `population_size::Int`: Target number of individuals in the population for each generation after initialization.
+        - `starting_pop_multiplier::Int`: A multiplier used to determine the size of the initial population.
+        - `starting_ops::Int`: Initial number of operations in each individual circuit of the population.
+        - `pairs::Int`: Number of parent pairs selected for breeding new individuals.
+        - `children_per_pair::Int`: Number of offspring produced by each pair of parents.
+        - `mutants_per_individual_per_type::Int`: Number of mutations applied to each individual for each mutation type.
+        - `p_lose_operation::Float64`: Probability of losing an operation during optimization.
+        - `p_add_operation::Float64`: Probability of adding an operation during optimization.
+        - `p_swap_operation::Float64`: Probability of swapping operations during optimization.
+        - `p_mutate_operation::Float64`: Probability of mutating operations during optimization.
+    """
     mutable struct AdvancedConfiguration <: AbstractAdvancedConfiguration
         # For the Genetic optimizer:
         # TODO: pair code_distance with Configuration.CostFunction?
@@ -100,25 +102,26 @@ module Configurable
         # Probabilities for various operations to be done during optimization:
         p_lose_operation::Float64
         p_add_operation::Float64
-        p_swap_operations::Float64
-        p_mutate_operations::Float64
+        p_swap_operation::Float64
+        p_mutate_operation::Float64
     end
 
     """
         Configuration
 
-    All configuration needed for running optimizer. Hardware configuration and advanced configuration need not be touched by the user in most scenarios.
+        All configuration needed for running optimizer. Hardware configuration and advanced configuration need not be touched by the user in most scenarios.
 
-    # Fields
-    - `num_simulations::Int`: Number of simulations that the optimizer will run.
-    - `raw_bell_pairs::Int`: Number of incoming bell pairs (n).
-    - `purified_pairs::Int`: Number of outgoing bell pairs (k).
-    - `num_registers::Int`: Amount of registers.
-    - `optimize_for::CostFunction`: Optimization goal (see `@enum CostFunction`).
-    - `max_gen::Int`: Maximum number of generations (TODO: more info needed).
-    - `max_ops::Int`: Limits the number of operations in each individual circuit.
-    - `hardware_config::AbstractHardwareConfiguration`: Hardware specifications, error rates.
-    - `advanced_config::AbstractAdvancedConfiguration`: Additional optimizer parameters that more or less can be left alone."""
+        # Fields
+        - `num_simulations::Int`: Number of simulations that the optimizer will run.
+        - `raw_bell_pairs::Int`: Number of incoming bell pairs (n).
+        - `purified_pairs::Int`: Number of outgoing bell pairs (k).
+        - `num_registers::Int`: Amount of registers.
+        - `optimize_for::CostFunction`: Optimization goal (see `@enum CostFunction`).
+        - `max_gen::Int`: Maximum number of generations (TODO: more info needed).
+        - `max_ops::Int`: Limits the number of operations in each individual circuit.
+        - `hardware_config::AbstractHardwareConfiguration`: Hardware specifications, error rates.
+        - `advanced_config::AbstractAdvancedConfiguration`: Additional optimizer parameters that more or less can be left alone.
+    """
     mutable struct Configuration <: AbstractConfiguration
         # Common user defined/edited parameters
         num_simulations::Int        # number of simulations that the optimizer will run
@@ -180,8 +183,8 @@ module Configurable
         mutants_per_individual_per_type = 5,
         p_lose_operation = 0.9,
         p_add_operation = 0.7,
-        p_swap_operations = 0.8,
-        p_mutate_operations = 0.8
+        p_swap_operation = 0.8,
+        p_mutate_operation = 0.8
         =#
         return AdvancedConfiguration(3,.9,20,200,17,20,3,5,0.9,0.7,0.8,0.8)
     end
@@ -382,10 +385,10 @@ module Configurable
     end
 
     """
-        get_advanced_config(config::Configuration)::AdvancedConfiguration
+    get_advanced_config(config::AbstractConfiguration)::AdvancedConfiguration
 
-    Returns the advanced configuration from the given `Configuration` object.
-    """
+Returns the advanced configuration from the given `Configuration` object.
+"""
     function get_advanced_config(config::Configuration)::AdvancedConfiguration
         return config.advanced_config
     end
@@ -610,21 +613,21 @@ module Configurable
     end
 
     """
-        get_p_swap_operations(config::AdvancedConfiguration)::Float64
+        get_p_swap_operation(config::AdvancedConfiguration)::Float64
 
     Returns the probability of swapping operations from the given `AdvancedConfiguration` object.
     """
-    function get_p_swap_operations(config::AdvancedConfiguration)::Float64
-        return config.p_swap_operations
+    function get_p_swap_operation(config::AdvancedConfiguration)::Float64
+        return config.p_swap_operation
     end
 
     """
-        get_p_mutate_operations(config::AdvancedConfiguration)::Float64
+        get_p_mutate_operation(config::AdvancedConfiguration)::Float64
 
     Returns the probability of mutating operations from the given `AdvancedConfiguration` object.
     """
-    function get_p_mutate_operations(config::AdvancedConfiguration)::Float64
-        return config.p_mutate_operations
+    function get_p_mutate_operation(config::AdvancedConfiguration)::Float64
+        return config.p_mutate_operation
     end
 
     # Setters
@@ -702,21 +705,21 @@ module Configurable
     end
 
     """
-        set_p_swap_operations!(config::AdvancedConfiguration, value::Float64)
+        set_p_swap_operation!(config::AdvancedConfiguration, value::Float64)
 
     Sets the probability of swapping operations in the given `AdvancedConfiguration` object to `value`.
     """
-    function set_p_swap_operations!(config::AdvancedConfiguration, value::Float64)
-        config.p_swap_operations = value
+    function set_p_swap_operation!(config::AdvancedConfiguration, value::Float64)
+        config.p_swap_operation = value
     end
 
     """
-        set_p_mutate_operations!(config::AdvancedConfiguration, value::Float64)
+        set_p_mutate_operation!(config::AdvancedConfiguration, value::Float64)
 
     Sets the probability of mutating operations in the given `AdvancedConfiguration` object to `value`.
     """
-    function set_p_mutate_operations!(config::AdvancedConfiguration, value::Float64)
-        config.p_mutate_operations = value
+    function set_p_mutate_operation!(config::AdvancedConfiguration, value::Float64)
+        config.p_mutate_operation = value
     end
     """
         get_code_distance(config::AdvancedConfiguration)::Int

@@ -81,7 +81,7 @@ selection_history = Dict()
 
 hardware_config = HardwareConfiguration(calib_path,calibration_data,valid_qubits)
 advanced_config = AdvancedConfiguration(code_distance,f_in,population_size,starting_pop_multiplier,starting_ops,pairs,children_per_pair,mutants_per_individual_per_type,p_lose_operation,p_add_operation,p_swap_operations,p_mutate_operations)
-config = Configuration(num_simulations,n,k,r,optimize_for,max_gen,max_ops,hardware_config,advanced_config)
+config::Configuration = Configuration(num_simulations,n,k,r,optimize_for,max_gen,max_ops,hardware_config,advanced_config)
 ############################
 ##  optimization process  ##
 ############################
@@ -89,8 +89,11 @@ config = Configuration(num_simulations,n,k,r,optimize_for,max_gen,max_ops,hardwa
 # Once the population is initialized, the optimization process begins. 
 using QEPO.Optimizer
 using Revise
-population = Population(individuals,selection_history)
-initialize_pop_with_constraints!(population,config)
+
+population::Population = Population(individuals,selection_history)
+
+run_with_constraints_history!(population,config)
+# initialize_pop_with_constraints!(population,config)
 # population = Population_hardware(n, k, r, code_distance, optimize_for, f_in, population_size, starting_pop_multiplier, max_gen, max_ops, starting_ops, pairs, children_per_pair, mutants_per_individual_per_type, p_lose_operation, p_add_operation, p_swap_operations, p_mutate_operations, individuals, selection_history, num_simulations)
 
 # We run the genetic algorithm with constraints derived from the calibration data and the valid qubit paths we defined earlier.

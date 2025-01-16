@@ -3,9 +3,11 @@
 Main Tasks:
 Configurable.jl 
 QEPO.jl
+Visualizer.jl
 
 
 TODO:Reformat code to follow Julia guidelines
+See TODOs in Configurable.jl, Optimizer.jl
 """
 module QEPO
 
