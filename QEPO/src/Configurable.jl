@@ -7,6 +7,45 @@
 # TODO update exports?
 
 """NOTES: 
+DON'T HESITATE TO EMAIL!
+silly question, annoyances
+https://modernjuliaworkflows.org/
+https://www.youtube.com/watch?v=kc9HwsxE1OY
+
+
+Priority:
+
+    1.
+    Minimize the amount of state that you are moving around
+    Make struct internals more standard
+    Restructure getters/setters -> 
+    List what API is expected by optimizer
+    1.1 Mutate APi
+    What does each gate need etc (mutate, droppable, etc) -> any new gate will work for optimizer
+
+    Don't worry about error messages for methods etc (for now)
+
+    2.
+    Constructors & defaults
+    @kwdef <--
+
+    3.
+    Documentation macro
+    https://github.com/JuliaDocs/DocStringExtensions.jl
+
+
+Later:
+    3.1 Testing 
+
+    Test macros 
+    @test ?
+    @testItems -> https://github.com/julia-vscode/TestItems.jl
+    https://github.com/QuantumSavory/QuantumSymbolics.jl/pull/75
+
+    4. Set up docs 
+    4.1 Doc tests?
+
+
 # function abc(a::AdvancedConfiguration)
 
 # abstract type AbstractConfiguration
@@ -37,13 +76,7 @@ module Configurable
     export CostFunction, logical_qubit_fidelity, purified_pairs_fidelity, average_marginal_fidelity
     export AbstractConfiguration, AbstractHardwareConfiguration, AbstractAdvancedConfiguration
     export HardwareConfiguration, AdvancedConfiguration, Configuration
-    export get_num_simulations, get_raw_bell_pairs, get_purified_pairs, get_num_registers, get_optimize_for, get_max_gen, get_max_ops, get_hardware_config, get_advanced_config
-    export set_num_simulations!, set_raw_bell_pairs!, set_purified_pairs!, set_num_registers!, set_optimize_for!, set_max_gen!, set_max_ops!, set_hardware_config!, set_advanced_config!
-    export get_calibration_data_path, get_calibration_data, get_valid_qubits
-    export set_calibration_data_path!, set_calibration_data!, set_valid_qubits!
-    export get_population_size, get_starting_pop_multiplier, get_starting_ops, get_pairs, get_children_per_pair, get_mutants_per_individual_per_type, get_p_lose_operation, get_p_add_operation, get_p_swap_operation, get_p_mutate_operation
-    export set_population_size!, set_starting_pop_multiplier!, set_starting_ops!, set_pairs!, set_children_per_pair!, set_mutants_per_individual_per_type!, set_p_lose_operation!, set_p_add_operation!, set_p_swap_operation!, set_p_mutate_operation!
-    export get_code_distance, get_communication_fidelity_in, set_code_distance!, set_communication_fidelity_in!
+   
     export DEFAULT_HARDWARE_CONFIG, DEFAULT_ADVANCED_CONFIG, DEFAULT_CONFIGURATION, read_calibration_data, update_hardware_data!
 
 
@@ -123,8 +156,10 @@ module Configurable
         - `advanced_config::AbstractAdvancedConfiguration`: Additional optimizer parameters that more or less can be left alone.
     """
     mutable struct Configuration <: AbstractConfiguration
-        # Common user defined/edited parameters
-        num_simulations::Int        # number of simulations that the optimizer will run
+        """ Common user defined/edited parameters"""
+        """number of simulations that the optimizer will run"""
+        num_simulations::Int        
+
         raw_bell_pairs::Int         # (n) incoming bell pairs
         purified_pairs::Int         # (k) outgoing bell pairs
         num_registers::Int          # amount of registers
@@ -158,7 +193,7 @@ module Configurable
         valid_qubits = ([ 43, 44, 45, 46, 47,  48, 49, 50])
 
         =#
-        return HardwareConfiguration("ibm_sherbrooke_calibrations_2024-10-09.csv", read_calibration_data("ibm_sherbrooke_calibrations_2024-10-09.csv"),([ 43, 44, 45, 46, 47,  48, 49, 50])
+        return HardwareConfiguration("QEPO/data/ibm_sherbrooke_calibrations_2024-10-09.csv", read_calibration_data("QEPO/data/ibm_sherbrooke_calibrations_2024-10-09.csv"),([ 43, 44, 45, 46, 47,  48, 49, 50])
         )
     end
 
@@ -217,6 +252,12 @@ module Configurable
         =#
 
         return Configuration(1000,6, 1,4,CostFunction(0),20,17,hardware_conf,advanced_conf)
+    end
+
+    # Constructor for configuration
+    function Configuration()
+    
+        return ..
     end
 
 
@@ -301,459 +342,8 @@ module Configurable
 
     """
     function update_hardware_data!(config::Configuration)
-        hardware_config::HardwareConfiguration = get_hardware_config(config)
-        set_calibration_data!(hardware_config, read_calibration_data(get_calibration_data_path(hardware_config)))
-        set_hardware_config!(config,hardware_config)
+        config.hardware_config.calibration_data = read_calibration_data(config.hardware_config.calibration_data_path)
     end
 
 
-
-    ##### Configuration struct
-
-    # Getters
-
-    """
-        get_num_simulations(config::Configuration)::Int
-
-    Returns the number of simulations from the given `Configuration` object.
-    """
-    function get_num_simulations(config::Configuration)::Int
-        return config.num_simulations
-    end
-
-    """
-        get_raw_bell_pairs(config::Configuration)::Int
-
-    Returns the number of raw Bell pairs from the given `Configuration` object.
-    """
-    function get_raw_bell_pairs(config::Configuration)::Int
-        return config.raw_bell_pairs
-    end
-
-    """
-        get_purified_pairs(config::Configuration)::Int
-
-    Returns the number of purified pairs from the given `Configuration` object.
-    """
-    function get_purified_pairs(config::Configuration)::Int
-        return config.purified_pairs
-    end
-
-    """
-        get_num_registers(config::Configuration)::Int
-
-    Returns the number of registers from the given `Configuration` object.
-    """
-    function get_num_registers(config::Configuration)::Int
-        return config.num_registers
-    end
-
-    """
-        get_optimize_for(config::Configuration)::CostFunction
-
-    Returns the cost function to optimize for from the given `Configuration` object.
-    """
-    function get_optimize_for(config::Configuration)::CostFunction
-        return config.optimize_for
-    end
-
-    """
-        get_max_gen(config::Configuration)::Int
-
-    Returns the maximum number of generations from the given `Configuration` object.
-    """
-    function get_max_gen(config::Configuration)::Int
-        return config.max_gen
-    end
-
-    """
-        get_max_ops(config::Configuration)::Int
-
-    Returns the maximum number of operations from the given `Configuration` object.
-    """
-    function get_max_ops(config::Configuration)::Int
-        return config.max_ops
-    end
-
-    """
-        get_hardware_config(config::Configuration)::HardwareConfiguration
-
-    Returns the hardware configuration from the given `Configuration` object.
-    """
-    function get_hardware_config(config::Configuration)::HardwareConfiguration
-        return config.hardware_config
-    end
-
-    """
-    get_advanced_config(config::AbstractConfiguration)::AdvancedConfiguration
-
-Returns the advanced configuration from the given `Configuration` object.
-"""
-    function get_advanced_config(config::Configuration)::AdvancedConfiguration
-        return config.advanced_config
-    end
-
-    # Setters
-
-    """
-        set_num_simulations!(config::Configuration, value::Int)
-
-    Sets the number of simulations in the given `Configuration` object to `value`.
-    """
-    function set_num_simulations!(config::Configuration, value::Int)
-        config.num_simulations = value
-    end
-
-    """
-        set_raw_bell_pairs!(config::Configuration, value::Int)
-
-    Sets the number of raw Bell pairs in the given `Configuration` object to `value`.
-    """
-    function set_raw_bell_pairs!(config::Configuration, value::Int)
-        config.raw_bell_pairs = value
-    end
-
-    """
-        set_purified_pairs!(config::Configuration, value::Int)
-
-    Sets the number of purified pairs in the given `Configuration` object to `value`.
-    """
-    function set_purified_pairs!(config::Configuration, value::Int)
-        config.purified_pairs = value
-    end
-
-    """
-        set_num_registers!(config::Configuration, value::Int)
-
-    Sets the number of registers in the given `Configuration` object to `value`.
-    """
-    function set_num_registers!(config::Configuration, value::Int)
-        config.num_registers = value
-    end
-
-    """
-        set_optimize_for!(config::Configuration, value::CostFunction)
-
-    Sets the cost function to optimize for in the given `Configuration` object to `value`.
-    """
-    function set_optimize_for!(config::Configuration, value::CostFunction)
-        config.optimize_for = value
-    end
-
-    """
-        set_max_gen!(config::Configuration, value::Int)
-
-    Sets the maximum number of generations in the given `Configuration` object to `value`.
-    """
-    function set_max_gen!(config::Configuration, value::Int)
-        config.max_gen = value
-    end
-
-    """
-        set_max_ops!(config::Configuration, value::Int)
-
-    Sets the maximum number of operations in the given `Configuration` object to `value`.
-    """
-    function set_max_ops!(config::Configuration, value::Int)
-        config.max_ops = value
-    end
-
-    """
-        set_hardware_config!(config::Configuration, value::HardwareConfiguration)
-
-    Sets the hardware configuration in the given `Configuration` object to `value`.
-    """
-    function set_hardware_config!(config::Configuration, value::HardwareConfiguration)
-        config.hardware_config = value
-    end
-
-    """
-        set_advanced_config!(config::Configuration, value::AdvancedConfiguration)
-
-    Sets the advanced configuration in the given `Configuration` object to `value`.
-    """
-    function set_advanced_config!(config::Configuration, value::AdvancedConfiguration)
-        config.advanced_config = value
-    end
-
-    #### HardwareConfiguration struct
-
-    # Getters
-
-    """
-        get_calibration_data_path(config::HardwareConfiguration)::String
-
-    Returns the calibration data path from the given `HardwareConfiguration` object.
-    """
-    function get_calibration_data_path(config::HardwareConfiguration)::String
-        return config.calibration_data_path
-    end
-
-    """
-        get_calibration_data(config::HardwareConfiguration)::Dict{Any,Any}
-
-    Returns the calibration data from the given `HardwareConfiguration` object.
-    """
-    function get_calibration_data(config::HardwareConfiguration)::Dict{Any,Any}
-        return config.calibration_data
-    end
-
-    """
-        get_valid_qubits(config::HardwareConfiguration)::Array{Int}
-
-    Returns the array of valid qubits from the given HardwareConfiguration object.
-    """
-    function get_valid_qubits(config::HardwareConfiguration)::Array{Int}
-        return config.valid_qubits
-    end
-
-    # Setters
-
-    """
-        set_calibration_data_path!(config::HardwareConfiguration, value::String)
-
-    Sets the calibration data path in the given `HardwareConfiguration` object to `value`.
-    """
-    function set_calibration_data_path!(config::HardwareConfiguration, value::String)
-        config.calibration_data_path = value
-    end
-
-    """
-        set_calibration_data!(config::HardwareConfiguration, value::Dict{Any,Any})
-
-    Sets the calibration data in the given `HardwareConfiguration` object to `value`.
-    """
-    function set_calibration_data!(config::HardwareConfiguration, value::Dict{Any,Any})
-        config.calibration_data = value
-    end
-
-    """
-        set_valid_qubits!(config::HardwareConfiguration, value::Array{Int})
-
-    Sets the array of valid qubits in the given `HardwareConfiguration` object to `value`.
-    """
-    function set_valid_qubits!(config::HardwareConfiguration, value::Array{Int})
-        config.valid_qubits = value
-    end
-
-    ### AdvancedConfiguration struct
-
-    # Getters
-
-    """
-        get_population_size(config::AdvancedConfiguration)::Int
-
-    Returns the population size from the given `AdvancedConfiguration` object.
-    """
-    function get_population_size(config::AdvancedConfiguration)::Int
-        return config.population_size
-    end
-
-    """
-        get_starting_pop_multiplier(config::AdvancedConfiguration)::Int
-
-    Returns the starting population multiplier from the given `AdvancedConfiguration` object.
-    """
-    function get_starting_pop_multiplier(config::AdvancedConfiguration)::Int
-        return config.starting_pop_multiplier
-    end
-
-    """
-        get_starting_ops(config::AdvancedConfiguration)::Int
-
-    Returns the starting operations from the given `AdvancedConfiguration` object.
-    """
-    function get_starting_ops(config::AdvancedConfiguration)::Int
-        return config.starting_ops
-    end
-
-    """
-        get_pairs(config::AdvancedConfiguration)::Int
-
-    Returns the number of pairs from the given `AdvancedConfiguration` object.
-    """
-    function get_pairs(config::AdvancedConfiguration)::Int
-        return config.pairs
-    end
-
-    """
-        get_children_per_pair(config::AdvancedConfiguration)::Int
-
-    Returns the number of children per pair from the given `AdvancedConfiguration` object.
-    """
-    function get_children_per_pair(config::AdvancedConfiguration)::Int
-        return config.children_per_pair
-    end
-
-    """
-        get_mutants_per_individual_per_type(config::AdvancedConfiguration)::Int
-
-    Returns the number of mutants per individual per type from the given `AdvancedConfiguration` object.
-    """
-    function get_mutants_per_individual_per_type(config::AdvancedConfiguration)::Int
-        return config.mutants_per_individual_per_type
-    end
-
-    """
-        get_p_lose_operation(config::AdvancedConfiguration)::Float64
-
-    Returns the probability of losing an operation from the given `AdvancedConfiguration` object.
-    """
-    function get_p_lose_operation(config::AdvancedConfiguration)::Float64
-        return config.p_lose_operation
-    end
-
-    """
-        get_p_add_operation(config::AdvancedConfiguration)::Float64
-
-    Returns the probability of adding an operation from the given `AdvancedConfiguration` object.
-    """
-    function get_p_add_operation(config::AdvancedConfiguration)::Float64
-        return config.p_add_operation
-    end
-
-    """
-        get_p_swap_operation(config::AdvancedConfiguration)::Float64
-
-    Returns the probability of swapping operations from the given `AdvancedConfiguration` object.
-    """
-    function get_p_swap_operation(config::AdvancedConfiguration)::Float64
-        return config.p_swap_operation
-    end
-
-    """
-        get_p_mutate_operation(config::AdvancedConfiguration)::Float64
-
-    Returns the probability of mutating operations from the given `AdvancedConfiguration` object.
-    """
-    function get_p_mutate_operation(config::AdvancedConfiguration)::Float64
-        return config.p_mutate_operation
-    end
-
-    # Setters
-
-    """
-        set_population_size!(config::AdvancedConfiguration, value::Int)
-
-    Sets the population size in the given `AdvancedConfiguration` object to `value`.
-    """
-    function set_population_size!(config::AdvancedConfiguration, value::Int)
-        config.population_size = value
-    end
-
-    """
-        set_starting_pop_multiplier!(config::AdvancedConfiguration, value::Int)
-
-    Sets the starting population multiplier in the given `AdvancedConfiguration` object to `value`.
-    """
-    function set_starting_pop_multiplier!(config::AdvancedConfiguration, value::Int)
-        config.starting_pop_multiplier = value
-    end
-
-    """
-        set_starting_ops!(config::AdvancedConfiguration, value::Int)
-
-    Sets the starting operations in the given `AdvancedConfiguration` object to `value`.
-    """
-    function set_starting_ops!(config::AdvancedConfiguration, value::Int)
-        config.starting_ops = value
-    end
-
-    """
-        set_pairs!(config::AdvancedConfiguration, value::Int)
-
-    Sets the number of pairs in the given `AdvancedConfiguration` object to `value`.
-    """
-    function set_pairs!(config::AdvancedConfiguration, value::Int)
-        config.pairs = value
-    end
-
-    """
-        set_children_per_pair!(config::AdvancedConfiguration, value::Int)
-
-    Sets the number of children per pair in the given `AdvancedConfiguration` object to `value`.
-    """
-    function set_children_per_pair!(config::AdvancedConfiguration, value::Int)
-        config.children_per_pair = value
-    end
-
-    """
-        set_mutants_per_individual_per_type!(config::AdvancedConfiguration, value::Int)
-
-    Sets the number of mutants per individual per type in the given `AdvancedConfiguration` object to `value`.
-    """
-    function set_mutants_per_individual_per_type!(config::AdvancedConfiguration, value::Int)
-        config.mutants_per_individual_per_type = value
-    end
-
-    """
-        set_p_lose_operation!(config::AdvancedConfiguration, value::Float64)
-
-    Sets the probability of losing an operation in the given `AdvancedConfiguration` object to `value`.
-    """
-    function set_p_lose_operation!(config::AdvancedConfiguration, value::Float64)
-        config.p_lose_operation = value
-    end
-
-    """
-        set_p_add_operation!(config::AdvancedConfiguration, value::Float64)
-
-    Sets the probability of adding an operation in the given `AdvancedConfiguration` object to `value`.
-    """
-    function set_p_add_operation!(config::AdvancedConfiguration, value::Float64)
-        config.p_add_operation = value
-    end
-
-    """
-        set_p_swap_operation!(config::AdvancedConfiguration, value::Float64)
-
-    Sets the probability of swapping operations in the given `AdvancedConfiguration` object to `value`.
-    """
-    function set_p_swap_operation!(config::AdvancedConfiguration, value::Float64)
-        config.p_swap_operation = value
-    end
-
-    """
-        set_p_mutate_operation!(config::AdvancedConfiguration, value::Float64)
-
-    Sets the probability of mutating operations in the given `AdvancedConfiguration` object to `value`.
-    """
-    function set_p_mutate_operation!(config::AdvancedConfiguration, value::Float64)
-        config.p_mutate_operation = value
-    end
-    """
-        get_code_distance(config::AdvancedConfiguration)::Int
-
-    Returns the code distance from the given `AdvancedConfiguration` object.
-    """
-    function get_code_distance(config::AdvancedConfiguration)::Int
-        return config.code_distance
-    end
-
-    """
-        get_communication_fidelity_in(config::AdvancedConfiguration)::Float64
-
-    Returns the communication fidelity in from the given `AdvancedConfiguration` object.
-    """
-    function get_communication_fidelity_in(config::AdvancedConfiguration)::Float64
-        return config.communication_fidelity_in
-    end
-
-    """
-        set_code_distance!(config::AdvancedConfiguration, value::Int)
-
-    Sets the code distance in the given `AdvancedConfiguration` object to `value`.
-    """
-    function set_code_distance!(config::AdvancedConfiguration, value::Int)
-        config.code_distance = value
-    end
-
-    """
-        set_communication_fidelity_in!(config::AdvancedConfiguration, value::Float64)
-
-    Sets the communication fidelity in the given `AdvancedConfiguration` object to `value`.
-    """
-    function set_communication_fidelity_in!(config::AdvancedConfiguration, value::Float64)
-        config.communication_fidelity_in = value
-    end
 end

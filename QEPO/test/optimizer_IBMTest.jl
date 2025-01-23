@@ -81,7 +81,7 @@ selection_history = Dict()
 
 hardware_config = HardwareConfiguration(calib_path,calibration_data,valid_qubits)
 advanced_config = AdvancedConfiguration(code_distance,f_in,population_size,starting_pop_multiplier,starting_ops,pairs,children_per_pair,mutants_per_individual_per_type,p_lose_operation,p_add_operation,p_swap_operations,p_mutate_operations)
-config::Configuration = Configuration(num_simulations,n,k,r,optimize_for,max_gen,max_ops,hardware_config,advanced_config)
+config = Configuration(num_simulations,n,k,r,optimize_for,max_gen,max_ops,hardware_config,advanced_config)
 ############################
 ##  optimization process  ##
 ############################
@@ -100,3 +100,12 @@ run_with_constraints_history!(population,config)
 
 # run_with_constraints!(population, calibration_data, valid_qubits)
 #run_with_constraints_history!(population, calibration_data, valid_qubits)
+
+using QEPO.Configurable
+# user
+config = DEFAULT_CONFIGURATION()
+
+using QEPO.Optimizer
+pop = Population()
+initialize_pop_with_constraints!(pop,config)
+run_with_constraints_history!(pop,config)
