@@ -13,7 +13,7 @@ module QEPO
 
 include("Configurable.jl")
 include("Optimizer.jl")
-
+include("Visualizer.jl")
 # using QEPO.Configurable
 # using QEPO.Optimizer
 

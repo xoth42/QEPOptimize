@@ -1,5 +1,11 @@
 module Visualizer
 
+# Notes for QEPO
+"""
+generate_dataframe_without_p2s runs the simulation and generates the dataframe, but this file should not be running the simulation at all. It should only govern visualization, and so these functions should only be building and operating on dataframes.  
+"""
+
+
 """
 Module for Quantum Circuit Analysis
 This module contains functions for reading IBM quantum computer calibration data,
@@ -18,75 +24,28 @@ using DataFrames
 using Statistics
 using Quantikz
 using Random
+using QEPO.Optimizer
+using BPGates # efficient representation of purification circuits
+export plot_performance_metrics, display_top_circuits
 
 # Overriding Quantikz operation for NoisyBellSwap to represent a SWAP operation
 Quantikz.QuantikzOp(op::PauliNoiseBellGate{BellSwap}) = Quantikz.SWAP(op.g.idx1, op.g.idx2)
 
 """
-read the calibration data of IBM quantum computer:
-Reads the calibration data of an IBM quantum computer from a CSV file.
-It parses the T1, T2, readout error, and two-qubit gate error and time data.
-Returns a dictionary containing the calibration data.
-"""
-
-function read_calibration_data(filename::String)
-
-    # Read the CSV file into a DataFrame
-    df = CSV.read(filename, DataFrame)
-
-    # Initialize an empty dictionary to store the calibration data
-    calibration_data = Dict()
-    # t = 400e-9                                        # TODO Two-qubit gate time (simplified)
-
-    # Process the single qubit data
-    for row in eachrow(df)
-        qubit = row["Qubit"]
-        T1 = row["T1 (us)"] * 1e-6
-        T2 = row["T2 (us)"] * 1e-6
-        readout_error = row["Readout assignment error "]
-        calibration_data[qubit] = (T1=T1, T2=T2, readout_error=readout_error)
-    end
-
-    # Process the two-qubit data
-    for row in eachrow(df)
-        cnot_errors_str = row["CNOT error "]
-        cnot_errors_list = split(cnot_errors_str, ';')
-        cnot_time_str = row["Gate time (ns)"]
-        cnot_time_list = split(cnot_errors_str, ';')
-
-        for cnot_error in cnot_errors_list
-            qubit_pair, cx_error_rates = split(cnot_error, ':')
-            qubits = Tuple(map(x -> parse(Int, x), split(qubit_pair, '_')))
-            cnot_error_rate = parse(Float64, cx_error_rates)
-            calibration_data[qubits] = (two_qubit_error=cnot_error_rate,)
-        end
-
-        # Add when considering T1 T2 noise model
-        for cnot_time in cnot_time_list
-            qubit_pair, cx_gate_time = split(cnot_time, ':')
-            qubits = Tuple(map(x -> parse(Int, x), split(qubit_pair, '_')))
-            cnot_gate_time = parse(Float64, cx_gate_time)* 1e-9 # convert to seconds
-            # Combining Two-Qubit Error and Gate Time
-            existing_data = calibration_data[qubits]
-            calibration_data[qubits] = merge(existing_data, (gate_time=cnot_gate_time,))
-        end
-
-    end
-
-    return calibration_data
-end
-
-"""
 plot all of the performance of population:
 Plots the performance metrics of a population of circuits.
-It visualizes the fidelity of purified pairs, logical qubit fidelity, average marginal fidelity, and success probability.
-"""
-function plot_performance_metrics(performances::Vector{Performance})
-
-    success_probs = [perf.success_probability for perf in performances]
-    purified_fidelities = [perf.purified_pairs_fidelity for perf in performances]
-    avg_marginal_fidelities = [perf.average_marginal_fidelity for perf in performances]
-    logical_fidelities = [perf.logical_qubit_fidelity for perf in performances]
+It visualizes the fidelity of purified pairs, logical qubit fidelity, average marginal fidelity, and success probability."""
+function plot_performance_metrics(population::Population)
+    success_probs           = []
+    purified_fidelities     = []
+    avg_marginal_fidelities = []
+    logical_fidelities      = []
+    for indiv in population.individuals
+        append!(success_probs, indiv.performance.success_probability)
+        append!(purified_fidelities, indiv.performance.purified_pairs_fidelity)
+        append!(avg_marginal_fidelities, indiv.performance.average_marginal_fidelity)
+        append!(logical_fidelities, indiv.performance.logical_qubit_fidelity)
+    end
 
     p1 = plot(
         purified_fidelities,
@@ -159,14 +118,15 @@ function plot_performance_metrics(performances::Vector{Performance})
     plot(p1, p2, p3, p4, layout=(2, 2), size=(1000, 800))
 end
 
-
 """
+    display_top_circuits(individuals::Vector{Individual}, top_n::Int)
+
 Displays the `top_n` circuits from a population, ranked by purified pairs fidelity.
 """
-function display_top_circuits(population::Population_hardware, top_n::Int)
+function display_top_circuits(individuals::Vector{Individual}, top_n::Int)
 
     # Sort the individuals by their purified_pairs_fidelity in descending order
-    sorted_individuals = sort(population.individuals, by = x -> x.performance.purified_pairs_fidelity, rev = true)
+    sorted_individuals = sort(individuals, by = x -> x.performance.purified_pairs_fidelity, rev = true)
 
     # Display the top `top_n` circuits
     for (i, indiv) in enumerate(sorted_individuals)
@@ -180,9 +140,11 @@ end
 
 
 """
+    generate_dataframe_without_p2s(population, num_individuals, f_ins, num_simulations, noise_model=nothing)
+
 Generates a DataFrame that contains simulation statistics for a population of circuits at different fidelities f_in
     and under noise models (T1 and T2).
- """
+"""
 function generate_dataframe_without_p2s(population, num_individuals, f_ins, num_simulations, noise_model=nothing)
     dataframe_length = num_individuals * length(f_ins)
     r = zeros(Int, dataframe_length)  # Number of registers
@@ -255,6 +217,7 @@ function generate_dataframe_without_p2s(population, num_individuals, f_ins, num_
     return df
 end
 
+# TODO rewrite to not run simulation. Only used to create data frames. 
 function generate_dataframe_without_p2s(df::DataFrame, num_individuals, f_ins, num_simulations, noise_model)
     dataframe_length = num_individuals * length(f_ins)
     r = zeros(Int, dataframe_length)  # Number of registers
@@ -466,8 +429,7 @@ end
 """
 Convert DataFrame string row to Individual
 Converts a string representation of an `Individual` back into an `Individual` object.
-This is useful when an `Individual` object has been serialized as a string in a DataFrame.
-"""
+This is useful when an `Individual` object has been serialized as a string in a DataFrame."""
 function convert_string_to_individual(individual_str::String)
     # Parse the individual string to create an Individual instance
     # Assuming the string is formatted correctly for evaluation

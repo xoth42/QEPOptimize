@@ -26,7 +26,7 @@ using OhMyThreads: tmap
 
 import Base: sort! # imports necessary for defining new methods of functions defined in Base
 
-export generate_noisy_BellSwap_ops_for_individual, long_range_entanglement_generation!, Population, generate_valid_pairs,NoisyBellSwap, initialize_pop_with_constraints!,run_with_constraints_history!
+export generate_noisy_BellSwap_ops_for_individual, long_range_entanglement_generation!, Population, Performance, Individual, generate_valid_pairs,NoisyBellSwap, initialize_pop_with_constraints!,run_with_constraints_history!
 
 ### Genetic optimizer setup
 
@@ -59,6 +59,8 @@ mutable struct Population
     selection_history::Dict{String,Vector{Int64}} # Keeps track of the selection history for different types of individuals (e.g., survivors, mutants)
     # help in understanding which types of individuals contribute most to the improvement of the population
     Population() = new([], Dict{String, Vector{Int64}}())
+    Population(individuals, selection_hist) = new(individuals,selection_hist)
+
 end
 
 ### Quantum Circuit and qubit setup
@@ -272,8 +274,8 @@ function calculate_performance!(indiv::Individual, num_simulations::Int, purifie
 
     if count_success == 0
         # println("count_success is 0; marginals and err_probs will be inf or NaN") # TODO from Stefan: this probably will be better as a log, not as a naked print
-        # TODO: uncomment the warn
-        # @warn "No successful simulations; marginals and error probabilities will be undefined."
+
+        @warn "No successful simulations; marginals and error probabilities will be undefined."
     end
 
     p_success = count_success / num_simulations # proportion of successful simulations

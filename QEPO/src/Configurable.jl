@@ -77,7 +77,7 @@ module Configurable
     export AbstractConfiguration, AbstractHardwareConfiguration, AbstractAdvancedConfiguration
     export HardwareConfiguration, AdvancedConfiguration, Configuration
    
-    export DEFAULT_HARDWARE_CONFIG, DEFAULT_ADVANCED_CONFIG, DEFAULT_CONFIGURATION, read_calibration_data, update_hardware_data!
+    export read_calibration_data, update_hardware_data!
 
 
     """Type for the main configuration"""
@@ -99,7 +99,13 @@ module Configurable
         calibration_data_path::String # Path to the csv file containing IBM calibration data
         calibration_data::Dict{Any,Any}
         valid_qubits::Array{Int}
-        # additional overrides?
+        """
+        ##Default constructor
+        calibration_data_path = "ibm_sherbrooke_calibrations_2024-10-09.csv",
+        calibration_data = read_calibration_data("ibm_sherbrooke_calibrations_2024-10-09.csv")
+        valid_qubits = ([ 43, 44, 45, 46, 47,  48, 49, 50])"""
+        HardwareConfiguration() = new("QEPO/data/ibm_sherbrooke_calibrations_2024-10-09.csv", read_calibration_data("QEPO/data/ibm_sherbrooke_calibrations_2024-10-09.csv"),([ 43, 44, 45, 46, 47,  48, 49, 50]))
+        
     end
 
     """
@@ -137,6 +143,20 @@ module Configurable
         p_add_operation::Float64
         p_swap_operation::Float64
         p_mutate_operation::Float64
+        """
+        code_distance = 3                    # for logical_qubit_fidelity
+        communication_fidelity_in = 0.90                          # fidelity that being generated at communication qubits 
+        population_size = 20                 # target population after distillation 
+        starting_pop_multiplier = 200        # multiplier 20 or 200
+        starting_ops = 17,
+        pairs = 20,
+        children_per_pair = 3,
+        mutants_per_individual_per_type = 5,
+        p_lose_operation = 0.9,
+        p_add_operation = 0.7,
+        p_swap_operation = 0.8,
+        p_mutate_operation = 0.8"""
+        AdvancedConfiguration() = new(3,.9,20,200,17,20,3,5,0.9,0.7,0.8,0.8)
     end
 
     """
@@ -168,78 +188,7 @@ module Configurable
         max_ops::Int                # Limits the number of operations in each individual circuit
         hardware_config::AbstractHardwareConfiguration # for hardware specifications, error rates
         advanced_config::AbstractAdvancedConfiguration # for additional optimizer parameters that more or less can be left alone
-    end
-
-
-
-    """
-    #######
-    DEFAULT CONFIGS 
-    #######
-    """
-
-    """
-        DEFAULT_HARDWARE_CONFIG()::AbstractHardwareConfiguration
-
-    Returns the default hardware configuration for the system. This includes the path to the calibration data and the calibration data itself.
-
-    # Returns
-    - `AbstractHardwareConfiguration`: The default hardware configuration.
-    """
-    function DEFAULT_HARDWARE_CONFIG()::AbstractHardwareConfiguration
-        #=
-        calibration_data_path = "ibm_sherbrooke_calibrations_2024-10-09.csv",
-        calibration_data = read_calibration_data("ibm_sherbrooke_calibrations_2024-10-09.csv")
-        valid_qubits = ([ 43, 44, 45, 46, 47,  48, 49, 50])
-
-        =#
-        return HardwareConfiguration("QEPO/data/ibm_sherbrooke_calibrations_2024-10-09.csv", read_calibration_data("QEPO/data/ibm_sherbrooke_calibrations_2024-10-09.csv"),([ 43, 44, 45, 46, 47,  48, 49, 50])
-        )
-    end
-
-    """
-        DEFAULT_ADVANCED_CONFIG()::AbstractAdvancedConfiguration
-
-    Returns the default advanced configuration for the system. This includes various parameters for operations, pairs, children per pair, mutants per individual per type, and probabilities for different operations.
-
-    # Returns
-    - `AbstractAdvancedConfiguration`: The default advanced configuration.
-    """
-    function DEFAULT_ADVANCED_CONFIG()::AbstractAdvancedConfiguration
-        #=
-        code_distance = 3                    # for logical_qubit_fidelity
-        communication_fidelity_in = 0.90                          # fidelity that being generated at communication qubits 
-        population_size = 20                 # target population after distillation 
-    starting_pop_multiplier = 200        # multiplier 20 or 200
-        starting_ops = 17,
-        
-        pairs = 20,
-        children_per_pair = 3,
-        mutants_per_individual_per_type = 5,
-        p_lose_operation = 0.9,
-        p_add_operation = 0.7,
-        p_swap_operation = 0.8,
-        p_mutate_operation = 0.8
-        =#
-        return AdvancedConfiguration(3,.9,20,200,17,20,3,5,0.9,0.7,0.8,0.8)
-    end
-
-
-
-    """
-        DEFAULT_CONFIGURATION(hardware_conf::AbstractHardwareConfiguration, advanced_conf::AbstractAdvancedConfiguration)::AbstractConfiguration
-
-    Returns the default configuration for the system using the provided hardware and advanced configurations. This includes the number of simulations, raw and purified bell pairs, number of registers, optimization target, maximum generations, and maximum operations.
-
-    # Arguments
-    - `hardware_conf::AbstractHardwareConfiguration`: The hardware configuration to use.
-    - `advanced_conf::AbstractAdvancedConfiguration`: The advanced configuration to use.
-
-    # Returns
-    - `AbstractConfiguration`: The default configuration.
-    """
-    function DEFAULT_CONFIGURATION(hardware_conf::AbstractHardwareConfiguration,advanced_conf::AbstractAdvancedConfiguration)::AbstractConfiguration
-        #=
+       """ 
         num_simulations = 1000,
         raw_bell_pairs = 6,
         purified_pairs = 1,
@@ -249,32 +198,9 @@ module Configurable
         max_ops = 17,
         hardware_config = hardware_conf,
         advanced_config = advanced_conf
-        =#
-
-        return Configuration(1000,6, 1,4,CostFunction(0),20,17,hardware_conf,advanced_conf)
+        """
+        Configuration() =  new(1000,6, 1,4,CostFunction(1),20,17,HardwareConfiguration(),AdvancedConfiguration())
     end
-
-    # Constructor for configuration
-    function Configuration()
-    
-        return ..
-    end
-
-
-    """
-        DEFAULT_CONFIGURATION()::AbstractConfiguration
-
-    Returns the default configuration for the system using the default hardware and advanced configurations.
-
-    # Returns
-    - `AbstractConfiguration`: The default configuration.
-    """
-    function DEFAULT_CONFIGURATION()::AbstractConfiguration
-        return DEFAULT_CONFIGURATION(DEFAULT_HARDWARE_CONFIG(),DEFAULT_ADVANCED_CONFIG())
-    end
-
-
-
 
     """
     read the calibration data of IBM quantum computer:
