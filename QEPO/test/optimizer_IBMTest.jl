@@ -1,19 +1,21 @@
-
 using Revise
-
-using QEPO.Configurable
-
-config = Configuration()
-
-using QEPO.Optimizer
-pop = Population()
-config.num_simulations = 10000
-
-initialize_pop_with_constraints!(pop,config)
-run_with_constraints_history!(pop,config)
 
 using QEPO.Visualizer: display_top_circuits, plot_performance_metrics
 
-display_top_circuits(pop.individuals,10)
+using QEPO.Configurable
+dataPath = "data/ibm_sherbrooke_calibrations_2024-10-09.csv"
+valid_qubits::Array{Int} = ([ 43, 44, 45, 46, 47,  48, 49, 50])
+hw_cfg = HardwareConfiguration(dataPath,valid_qubits)
+adv_cfg = AdvancedConfiguration()
+config = Configuration(hw_cfg,adv_cfg)
+config
+using QEPO.Optimizer
+pop = Population()
+config.num_simulations = 100
+config.max_gen = 20
+# initialize_pop_with_constraints!(pop,config) 
+run_with_constraints_history!(pop,config)
 
-plot_performance_metrics(pop)
+display_top_circuits(pop.individuals,2)
+pop.individuals
+# plot_performance_metrics(pop)

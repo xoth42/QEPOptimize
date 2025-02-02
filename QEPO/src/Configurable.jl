@@ -1,10 +1,8 @@
-# TODO: default configurations
+
 # TODO: methods for creating configurations
 # TODO: delete NOTES?
 # TODO: document all functions, create docs
-# TODO: store default configs somewhere else?
 # TODO: Make sure these work well as the defaults
-# TODO update exports?
 
 """NOTES: 
 DON'T HESITATE TO EMAIL!
@@ -16,9 +14,9 @@ https://www.youtube.com/watch?v=kc9HwsxE1OY
 Priority:
 
     1.
-    Minimize the amount of state that you are moving around
+    Done - Minimize the amount of state that you are moving around
     Make struct internals more standard
-    Restructure getters/setters -> 
+    Done - Restructure getters/setters -> 
     List what API is expected by optimizer
     1.1 Mutate APi
     What does each gate need etc (mutate, droppable, etc) -> any new gate will work for optimizer
@@ -105,6 +103,7 @@ module Configurable
         calibration_data = read_calibration_data("ibm_sherbrooke_calibrations_2024-10-09.csv")
         valid_qubits = ([ 43, 44, 45, 46, 47,  48, 49, 50])"""
         HardwareConfiguration() = new("QEPO/data/ibm_sherbrooke_calibrations_2024-10-09.csv", read_calibration_data("QEPO/data/ibm_sherbrooke_calibrations_2024-10-09.csv"),([ 43, 44, 45, 46, 47,  48, 49, 50]))
+        HardwareConfiguration(dataPath::String,valid_qubits::Array{Int}) = new(dataPath,read_calibration_data(dataPath),valid_qubits)
         
     end
 
@@ -197,17 +196,16 @@ module Configurable
         max_gen = 20,
         max_ops = 17,
         hardware_config = hardware_conf,
-        advanced_config = advanced_conf
-        """
+        advanced_config = advanced_conf"""
         Configuration() =  new(1000,6, 1,4,CostFunction(1),20,17,HardwareConfiguration(),AdvancedConfiguration())
+        Configuration(hardware_config::HardwareConfiguration,adv_config::AdvancedConfiguration) = new(1000,6, 1,4,CostFunction(1),20,17,hardware_config,adv_config)
     end
 
     """
     read the calibration data of IBM quantum computer:
     Reads the calibration data of an IBM quantum computer from a CSV file.
     It parses the T1, T2, readout error, and two-qubit gate error and time data.
-    Returns a dictionary containing the calibration data.
-    """
+    Returns a dictionary containing the calibration data."""
     function read_calibration_data(filename::String)::Dict{Any,Any}
 
         # Read the CSV file into a DataFrame
