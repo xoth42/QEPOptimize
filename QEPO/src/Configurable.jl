@@ -19,9 +19,18 @@ Priority:
     Done - Restructure getters/setters -> 
     List what API is expected by optimizer
     1.1 Mutate APi
+
+        Use any type for operations, get the set of functions needed for the optimizer to run, use multiple dispatch
+
+
     What does each gate need etc (mutate, droppable, etc) -> any new gate will work for optimizer
 
     Don't worry about error messages for methods etc (for now)
+
+
+    1.2 Preliminary testing
+        Have list of maual gates (~10)=> have code to evaulate quality of circuit
+
 
     2.
     Constructors & defaults
@@ -32,8 +41,14 @@ Priority:
     https://github.com/JuliaDocs/DocStringExtensions.jl
 
 
+
+
+
 Later:
     3.1 Testing 
+
+
+
 
     Test macros 
     @test ?

@@ -83,7 +83,6 @@ using QuantumClifford # general-purpose tools for Clifford circuits
 using QuantumClifford.Experimental.NoisyCircuits
 using BPGates: T1NoiseOp, T2NoiseOp
 using OhMyThreads: tmap
-# abstract type QuantumOperations 
 
 import Base: sort! # imports necessary for defining new methods of functions defined in Base
 
@@ -107,22 +106,8 @@ struct Performance
     success_probability::Float64
 end
 
-# Create abstract operators and gate types for the optimizer, so that we can easily extend the optimizer to include more gate types in the future
-abstract type QuantumOperation end
-BPGates.BellOp                  <: QuantumOperation
-BPGates.BellMeasure             <: QuantumOperation
-BPGates.BellSwap                <: QuantumOperation
-PauliNoiseBellGate{CNOTPerm}    <: QuantumOperation
-PauliNoiseBellGate{BPGates.BellSwap}    <: QuantumOperation
-CNOTPerm                <: QuantumOperation
-
-PauliNoiseBellGate              <: QuantumOperation
-NoisyBellMeasureNoisyReset      <: QuantumOperation
-T1NoiseOp                       <: QuantumOperation
-T2NoiseOp                       <: QuantumOperation
-
 # Define PauliNoiseBellGate and others to be droppable/not
-is_droppable(::QuantumOperation) = false
+is_droppable(::Any) = false
 is_droppable(::PauliNoiseBellGate) = true
 is_droppable(::NoisyBellMeasureNoisyReset) = true
 
@@ -130,12 +115,12 @@ is_droppable(::NoisyBellMeasureNoisyReset) = true
 
 mutable struct Individual
     history::String
-    ops::Vector{QuantumOperation}      # A vector containing a sequence of quantum operations that make up the individual's circuit
+    ops::Vector{Any}      # A vector containing a sequence of quantum operations that make up the individual's circuit
     performance::Performance
     fitness::Float64
-    Individual() = new("", QuantumOperation[], Performance(Float64[], 0.0, 0.0, 0.0, 0.0), 0.0)
-    Individual(history::String) = new(history, QuantumOperation[], Performance(Float64[], 0.0, 0.0, 0.0, 0.0), 0.0)
-    Individual(history::String, ops::Vector{QuantumOperation}, performance::Performance, fitness::Float64) = new(history, ops, performance, fitness)
+    Individual() = new("", [], Performance(Float64[], 0.0, 0.0, 0.0, 0.0), 0.0)
+    Individual(history::String) = new(history, [], Performance(Float64[], 0.0, 0.0, 0.0, 0.0), 0.0)
+    Individual(history::String, ops::Vector{Any}, performance::Performance, fitness::Float64) = new(history, ops, performance, fitness)
 end
 
 mutable struct Population
@@ -233,7 +218,7 @@ function thermal_relaxation_error_rate(t1, t2, gate_time) # experimental private
 end
 
 # TODO this function does not add thermal noise to the "wait" times in between gates on the qubits that are not acted upon on the current timestep
-function add_thermal_relaxation_noise(circuit, λ₁, λ₂)::Vector{QuantumOperation} # experimental private function for intenral use
+function add_thermal_relaxation_noise(circuit, λ₁, λ₂) # experimental private function for intenral use
     max_steps = 100
     max_pairs = 4
     time_table = falses(max_steps, max_pairs)   # tracks the activity of each qubit over time
@@ -291,7 +276,7 @@ function push_noise!(circuit, gate::PauliNoiseBellGate{T}, λ₁, λ₂) where T
 end
 
 push_noise!(circuit, gate::NoisyBellMeasureNoisyReset, λ₁, λ₂) = []  # No thermal relaxation added to measurement
-
+push_noise!(circuit, any::Any, λ₁, λ₂) = [] 
 function add_idle_noise!(circuit, time_table, step, λ₁, λ₂)
     for q in 1:size(time_table, 2)
         if !time_table[step, q]  # If the qubit is idle at this time step
@@ -333,14 +318,14 @@ function calculate_performance!(indiv::Individual, num_simulations::Int, purifie
     # add thermal relaxation noise T1 T2 into circuits
     # TODO: incorporate given hardware noise? 
     # Note:!! Without this hardware noise, the circuits have trouble actually optmizing. Some thermal relaxation error noise is needed for the optimization to run and get progress. Otherwise, the results show very little growth. 
-    t1_avg, t2_avg, gate_times = 286e-6, 251e-6, 533e-9  # example for testing: average T1, T2 and t on 'ibmq_sherbrooke'
-    λ₁, λ₂ = thermal_relaxation_error_rate(t1_avg, t2_avg, gate_times)
-    noisy_ops = add_thermal_relaxation_noise(indiv.ops, λ₁, λ₂)
+    # t1_avg, t2_avg, gate_times = 286e-6, 251e-6, 533e-9  # example for testing: average T1, T2 and t on 'ibmq_sherbrooke'
+    # λ₁, λ₂ = thermal_relaxation_error_rate(t1_avg, t2_avg, gate_times)
+    # noisy_ops = add_thermal_relaxation_noise(indiv.ops, λ₁, λ₂)
 
     # Threads.@threads for _ in 1:num_simulations # TODO from Stefan: this is a good place for threads
     for _ in 1:num_simulations
         res_state, res = mctrajectory!(copy(state), initial_noise_circuit) # Simulates the effect of initial noise on the Bell state.
-        res_state, res = mctrajectory!(res_state, noisy_ops) # Applies noisy gates (if noise is present) to the state.
+        # res_state, res = mctrajectory!(res_state, noisy_ops) # Applies noisy gates (if noise is present) to the state.
         # If the circuit execution was 'successful'
         if res == continue_stat
             count_success += 1
@@ -416,7 +401,7 @@ function map_num_to_valid_qubits(num::Int, valid_pairs)
 end
 
 
-function generate_noisy_BellSwap_ops_for_individual(num_registers,valid_pairs,calibration_data)::Vector{QuantumOperation}
+function generate_noisy_BellSwap_ops_for_individual(num_registers,valid_pairs,calibration_data)::Vector{Any}
     ##### Should num_gates:
     # num_gates = rand(1:get_starting_ops(advanced_config) - 1)  # Randomly determine the number of gates to include in each individual's circuit)
     ##### Be used here ??
@@ -516,7 +501,7 @@ function initialize_pop_with_constraints!(population::Population, config::Config
         noisy_BellSwap = generate_noisy_BellSwap_ops_for_individual(num_registers,valid_pairs,calibration_data)
 
         """ Create Random CNOT Gates with Nearest Neighbor Constraints """
-        random_gates::Vector{QuantumOperation} = QuantumOperation[]
+        random_gates::Vector{Any} = []
         # num_gates = rand(1:starting_ops-1)             # strategy 1: randomly determines the number of gates to be included in each individual's circuit.
         num_gates = rand(starting_ops*0.5 : starting_ops*0.7)  # strategy 2: control the ratio between the number of cnotperm gate and measurements
 

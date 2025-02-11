@@ -3,7 +3,7 @@ using Revise
 using QEPO.Visualizer: display_top_circuits, plot_performance_metrics
 
 using QEPO.Configurable
-dataPath = "data/ibm_sherbrooke_calibrations_2024-10-09.csv"
+dataPath = "QEPO/data/ibm_sherbrooke_calibrations_2024-10-09.csv"
 valid_qubits::Array{Int} = ([ 43, 44, 45, 46, 47,  48, 49, 50])
 hw_cfg = HardwareConfiguration(dataPath,valid_qubits)
 adv_cfg = AdvancedConfiguration()
@@ -16,6 +16,6 @@ config.max_gen = 20
 # initialize_pop_with_constraints!(pop,config) 
 run_with_constraints_history!(pop,config)
 
-display_top_circuits(pop.individuals,2)
-pop.individuals
+display_top_circuits(pop.individuals,5)
+pop.individuals[1]
 # plot_performance_metrics(pop)
