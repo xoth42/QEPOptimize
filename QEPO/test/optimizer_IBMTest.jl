@@ -11,7 +11,7 @@ config = Configuration(hw_cfg,adv_cfg)
 config
 using QEPO.Optimizer
 pop = Population()
-config.num_simulations = 100
+config.num_simulations = 10000
 config.max_gen = 20
 # initialize_pop_with_constraints!(pop,config) 
 run_with_constraints_history!(pop,config)

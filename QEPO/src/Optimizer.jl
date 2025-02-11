@@ -7,6 +7,16 @@ module Optimizer
 # TODO: provide and document full usage of optimizer.jl within QEPO.jl
 # TODO document Individual,population, and docs for all functions
 # TODO: update abstractions and data types
+# TODO: rewrite gain_op_with_constraints
+
+"""
+Organize the noise in the ciruit. Some noise is in mutate, calculate performance, etc. 
+
+Abstract away noise in initial state and in circuit
+
+
+"""
+
 
 """
 Optimizer.jl - Genetic optimizer from YipiaoWu/QuantumHardware
@@ -313,6 +323,7 @@ function calculate_performance!(indiv::Individual, num_simulations::Int, purifie
     counts_nb_errors = zeros(Int,purified_pairs+1) # an array to find P₀, P₁, …, Pₖ -- Careful with indexing it!
 
     # Effectively creates a 'mixture' of the initial states baed on the input fidelity.
+    # TODO: parameter
     initial_noise_circuit = [PauliNoiseOp(i, f_in_to_pauli(advanced_config.communication_fidelity_in)...) for i in 1:num_registers]
 
     # add thermal relaxation noise T1 T2 into circuits
@@ -321,11 +332,14 @@ function calculate_performance!(indiv::Individual, num_simulations::Int, purifie
     # t1_avg, t2_avg, gate_times = 286e-6, 251e-6, 533e-9  # example for testing: average T1, T2 and t on 'ibmq_sherbrooke'
     # λ₁, λ₂ = thermal_relaxation_error_rate(t1_avg, t2_avg, gate_times)
     # noisy_ops = add_thermal_relaxation_noise(indiv.ops, λ₁, λ₂)
-
+    noisy_ops = indiv.ops
     # Threads.@threads for _ in 1:num_simulations # TODO from Stefan: this is a good place for threads
     for _ in 1:num_simulations
+        # Network level noise
         res_state, res = mctrajectory!(copy(state), initial_noise_circuit) # Simulates the effect of initial noise on the Bell state.
-        # res_state, res = mctrajectory!(res_state, noisy_ops) # Applies noisy gates (if noise is present) to the state.
+
+
+        res_state, res = mctrajectory!(res_state, noisy_ops) # Applies noisy gates (if noise is present) to the state.
         # If the circuit execution was 'successful'
         if res == continue_stat
             count_success += 1
@@ -940,7 +954,8 @@ end
 """
     gain_op_with_constraints(indiv::Individual,  calibration_data::Dict, valid_qubits::Array{Int},purified_pairs,num_registers,f_in)::Individual
 
-    Add a new operation to an individual copy, and return it 
+    Add a new operation to an individual copy, and return it
+    
 """
 function gain_op_with_constraints(indiv::Individual,  calibration_data::Dict, valid_qubits::Array{Int},purified_pairs,num_registers,f_in)::Individual
     new_indiv = deepcopy(indiv)

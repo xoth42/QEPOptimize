@@ -3,6 +3,20 @@ using Test
 # include("test_Configurable.jl")
 # include("test_Optimizer.jl")
 
+"""
+Contract testing
+Total energy should not change
+
+Test change of fidelity. Should increase in the end
+
+Test known circuits on the simulator
+
+
+
+"""
+
+
+
 # using Test
 using CSV
 using DataFrames
