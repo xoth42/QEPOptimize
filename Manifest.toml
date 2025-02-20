@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.2"
+julia_version = "1.11.3"
 manifest_format = "2.0"
 project_hash = "c171e4a08abf9876791979c0e353f0b8cf1e659b"
 
@@ -71,7 +71,7 @@ version = "1.11.0"
 
 [[deps.BPGates]]
 deps = ["QuantumClifford", "Random"]
-path = "../BPGates.jl"
+git-tree-sha1 = "3039a2dbc40107a7fbf7566ddb368f7634ef298c"
 uuid = "2c1a90cd-bec4-4415-ae35-245016909a8f"
 version = "1.2.0"
 weakdeps = ["Quantikz"]

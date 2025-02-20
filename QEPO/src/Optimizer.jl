@@ -14,6 +14,12 @@ Organize the noise in the ciruit. Some noise is in mutate, calculate performance
 
 Abstract away noise in initial state and in circuit
 
+Thermal relaxation notes for later:
+# add thermal relaxation noise T1 T2 into circuits
+# TODO: incorporate given hardware noise? 
+# t1_avg, t2_avg, gate_times = 286e-6, 251e-6, 533e-9  # example for testing: average T1, T2 and t on 'ibmq_sherbrooke'
+# λ₁, λ₂ = thermal_relaxation_error_rate(t1_avg, t2_avg, gate_times)
+# noisy_ops = add_thermal_relaxation_noise(indiv.ops, λ₁, λ₂)
 
 """
 
@@ -96,7 +102,7 @@ using OhMyThreads: tmap
 
 import Base: sort! # imports necessary for defining new methods of functions defined in Base
 
-export generate_noisy_BellSwap_ops_for_individual, long_range_entanglement_generation!, Population, Performance, Individual, generate_valid_pairs,NoisyBellSwap, initialize_pop_with_constraints!,run_with_constraints_history!
+export generate_noisy_BellSwap_ops_for_individual, long_range_entanglement_generation!, Population, Performance, Individual, generate_valid_pairs,NoisyBellSwap, initialize_pop_with_constraints!,run_with_constraints_history!, ThreadData
 
 ### Genetic optimizer setup
 
@@ -141,6 +147,20 @@ mutable struct Population
     Population(individuals, selection_hist) = new(individuals,selection_hist)
 
 end
+
+
+
+# Create as struct for each thread's data used in calculate_performance
+mutable struct ThreadData
+    count_success::Int64
+    counts_marginals::Vector{Int64}
+    counts_nb_errors::Vector{Int64}
+    err_count::Int64
+end
+
+# Create test ThreadData
+td = ThreadData(0, zeros(Int, 1), zeros(Int, 1), 0)
+
 
 ### Quantum Circuit and qubit setup
 
@@ -313,67 +333,80 @@ end
 ### Setup algorithms
 
 
-""" simulates quantum operations using Monte Carlo trajectories to evaluate the performance of a given quantum purification circuit
-noise_model with T1 T2 noise will be implemented in this step """
-function calculate_performance!(indiv::Individual, num_simulations::Int, purified_pairs::Int,num_registers::Int, optimize_for::CostFunction, advanced_config::AdvancedConfiguration)
-    state = BellState(num_registers)   # R bell states initialized in the A state
-    count_success = 0
-    counts_marginals = zeros(Int,purified_pairs) # an array to find F₁, F₂, …, Fₖ (tracks how often each purified bell pair is in the desired state)
-    # probability of having 0, 1, 2, ... k 'erroneous' BP's
-    counts_nb_errors = zeros(Int,purified_pairs+1) # an array to find P₀, P₁, …, Pₖ -- Careful with indexing it!
+"""
+    calculate_performance!(indiv::Individual, num_simulations::Int, purified_pairs::Int,optimize_for::CostFunction, code_distance::Int, initial_state::BPGates.BellState)::Performance
 
-    # Effectively creates a 'mixture' of the initial states baed on the input fidelity.
-    # TODO: parameter
-    initial_noise_circuit = [PauliNoiseOp(i, f_in_to_pauli(advanced_config.communication_fidelity_in)...) for i in 1:num_registers]
 
-    # add thermal relaxation noise T1 T2 into circuits
-    # TODO: incorporate given hardware noise? 
-    # Note:!! Without this hardware noise, the circuits have trouble actually optmizing. Some thermal relaxation error noise is needed for the optimization to run and get progress. Otherwise, the results show very little growth. 
-    # t1_avg, t2_avg, gate_times = 286e-6, 251e-6, 533e-9  # example for testing: average T1, T2 and t on 'ibmq_sherbrooke'
-    # λ₁, λ₂ = thermal_relaxation_error_rate(t1_avg, t2_avg, gate_times)
-    # noisy_ops = add_thermal_relaxation_noise(indiv.ops, λ₁, λ₂)
-    noisy_ops = indiv.ops
+    updates the individual's performance and fidelity, and returns it
+        
+    simulates quantum operations using Monte Carlo trajectories to evaluate the performance of a given quantum purification circuit
+
+    Uses a the supplied initial state
+"""
+function calculate_performance!(indiv::Individual, num_simulations::Int, purified_pairs::Int,optimize_for::CostFunction, code_distance::Int, initial_state::BPGates.BellState)
+    # count_success = 0 
+    # counts_marginals = zeros(Int,purified_pairs) # an array to find F₁, F₂, …, Fₖ (tracks how often each purified bell pair is in the desired state)
+    # # probability of having 0, 1, 2, ... k 'erroneous' BP's
+    # counts_nb_errors = zeros(Int,purified_pairs+1) # an array to find P₀, P₁, …, Pₖ -- Careful with indexing it!
+
     # Threads.@threads for _ in 1:num_simulations # TODO from Stefan: this is a good place for threads
-    for _ in 1:num_simulations
-        # Network level noise
-        res_state, res = mctrajectory!(copy(state), initial_noise_circuit) # Simulates the effect of initial noise on the Bell state.
+    # for _ in 1:num_simulations
 
+    # Multithreading 
+    # TODO: redo this implementation, so that it uses less space. right now it creates 2 n-vectors for each thread, which may be a lot
+    # Get amount of threads
+    threads = Threads.nthreads()
+  
+    # Fill a vector with empty structs for each thread
+    ThreadData(0, zeros(Int, purified_pairs), zeros(Int, purified_pairs+1),0)
+    thread_result = fill(ThreadData(0, zeros(Int, purified_pairs), zeros(Int, purified_pairs+1),0), threads)
+    
+    # Figure out how many simulations each thread will run
+    thread_simulations = div(num_simulations, threads)
+    # Loop through all of the data containers (eg, threads)
+    Threads.@threads for thread_id in 1:threads
+        # Loop through all of the designated simulations for this thread
+        for _ in 1:thread_simulations
+            res_state, res = mctrajectory!(copy(initial_state), indiv.ops) # Simulates the operations on the initial bell state
 
-        res_state, res = mctrajectory!(res_state, noisy_ops) # Applies noisy gates (if noise is present) to the state.
-        # If the circuit execution was 'successful'
-        if res == continue_stat
-            count_success += 1
-            err_count = 0
-            for i in 1:purified_pairs # for each purified pair
-                if res_state.phases[2i-1] || res_state.phases[2i] # checks whether an error has occurred based on binary representation in BPGates
-                    err_count += 1
-                else
-                    counts_marginals[i] += 1 # tracks the i'th purified pair is in the desired state
+            # If the circuit execution was 'successful'
+            if res == continue_stat
+                thread_result[thread_id].count_success += 1
+                thread_result[thread_id].err_count = 0
+                for i in 1:purified_pairs # for each purified pair
+                    if res_state.phases[2i-1] || res_state.phases[2i] # checks whether an error has occurred based on binary representation in BPGates
+                        thread_result[thread_id].err_count += 1
+                    else
+                        thread_result[thread_id].counts_marginals[i] += 1 # tracks the i'th purified pair is in the desired state
+                    end
                 end
+                # For Julia indexing; index 1 corresponds to 0 errors, index 2 to 1 error, ...
+                thread_result[thread_id].counts_nb_errors[thread_result[thread_id].err_count+1] += 1
             end
-            # For Julia indexing; index 1 corresponds to 0 errors, index 2 to 1 error, ...
-            counts_nb_errors[err_count+1] += 1
         end
     end
 
-    if count_success == 0
-        # println("count_success is 0; marginals and err_probs will be inf or NaN") # TODO from Stefan: this probably will be better as a log, not as a naked print
+    # Combine the results from all threads
+    count_success =    sum([thread.count_success    for thread in thread_result])
+    counts_marginals = sum([thread.counts_marginals for thread in thread_result])
+    counts_nb_errors = sum([thread.counts_nb_errors for thread in thread_result])
 
+
+    if count_success == 0
         @warn "No successful simulations; marginals and error probabilities will be undefined."
     end
 
-    p_success = count_success / num_simulations # proportion of successful simulations
+    p_success = count_success    / num_simulations # proportion of successful simulations
     marginals = counts_marginals / count_success # marginal fidelities of individual purified pairs
     err_probs = counts_nb_errors / count_success # Distribution of errors across simulations : an array containing in each index i, how many errors occurred in (i-1)-bell-pair
 
-    correctable_errors = div(advanced_config.code_distance  - 1, 2) # Maximum number of correctable errors based on code distance after teleportation
+    correctable_errors = div(code_distance  - 1, 2) # Maximum number of correctable errors based on code distance after teleportation
     indiv_logical_qubit_fidelity = sum(err_probs[1:min(end, correctable_errors+1)]) # Calculates the logical qubit fidelity by summing the probabilities of correctable errors
     
 
-   
-
+    # Apply performance data to individual
     indiv.performance =  Performance(err_probs, err_probs[1],indiv_logical_qubit_fidelity, mean(marginals), p_success)
-    # Performance(error_probabilities, purified_pairs_fidelity, logical_qubit_fidelity, average_marginal_fidelity, success_probability)
+
     # Sets the fitness value based on the optimization goal
     if optimize_for == logical_qubit_fidelity
         indiv.fitness =  indiv.performance.logical_qubit_fidelity
@@ -388,7 +421,99 @@ function calculate_performance!(indiv::Individual, num_simulations::Int, purifie
         indiv.fitness = 0.0
     end
 
+
     return indiv.performance
+
+end
+
+""" 
+    simulates quantum operations using Monte Carlo trajectories to evaluate the performance of a given quantum purification circuit
+
+    Uses a generated initial state with random Pauli noise op gates
+
+noise_model with T1 T2 noise will be implemented in this step """
+function calculate_performance!(indiv::Individual, num_simulations::Int, purified_pairs::Int,num_registers::Int, optimize_for::CostFunction, communication_fidelity_in::Float64,code_distance::Int)
+
+    # Initial state
+    state = BellState(num_registers)   # R bell states initialized in the A state
+    initial_noise_circuit = [PauliNoiseOp(i, f_in_to_pauli(communication_fidelity_in)...) for i in 1:num_registers]
+
+    # Apply to the noise ops
+    mctrajectory!(state, initial_noise_circuit)
+
+    # Run normal calculate_performance!
+    return calculate_performance!(indiv,
+        num_simulations,
+        purified_pairs, 
+        optimize_for,
+        code_distance, 
+        state
+    )
+
+    # count_success = 0
+    # counts_marginals = zeros(Int,purified_pairs) # an array to find F₁, F₂, …, Fₖ (tracks how often each purified bell pair is in the desired state)
+    # # probability of having 0, 1, 2, ... k 'erroneous' BP's
+    # counts_nb_errors = zeros(Int,purified_pairs+1) # an array to find P₀, P₁, …, Pₖ -- Careful with indexing it!
+
+    # Effectively creates a 'mixture' of the initial states baed on the input fidelity.
+    # TODO: parameter
+   
+
+    # noisy_ops = indiv.ops
+    # # Threads.@threads for _ in 1:num_simulations # TODO from Stefan: this is a good place for threads
+    # for _ in 1:num_simulations
+    #     # Network level noise
+    #     res_state, res = mctrajectory!(copy(state), initial_noise_circuit) # Simulates the effect of initial noise on the Bell state.
+
+
+    #     res_state, res = mctrajectory!(res_state, noisy_ops) # Applies noisy gates (if noise is present) to the state.
+    #     # If the circuit execution was 'successful'
+    #     if res == continue_stat
+    #         count_success += 1
+    #         err_count = 0
+    #         for i in 1:purified_pairs # for each purified pair
+    #             if res_state.phases[2i-1] || res_state.phases[2i] # checks whether an error has occurred based on binary representation in BPGates
+    #                 err_count += 1
+    #             else
+    #                 counts_marginals[i] += 1 # tracks the i'th purified pair is in the desired state
+    #             end
+    #         end
+    #         # For Julia indexing; index 1 corresponds to 0 errors, index 2 to 1 error, ...
+    #         counts_nb_errors[err_count+1] += 1
+    #     end
+    # end
+
+    # if count_success == 0
+    #     @warn "No successful simulations; marginals and error probabilities will be undefined."
+    # end
+
+    # p_success = count_success / num_simulations # proportion of successful simulations
+    # marginals = counts_marginals / count_success # marginal fidelities of individual purified pairs
+    # err_probs = counts_nb_errors / count_success # Distribution of errors across simulations : an array containing in each index i, how many errors occurred in (i-1)-bell-pair
+
+    # correctable_errors = div(code_distance  - 1, 2) # Maximum number of correctable errors based on code distance after teleportation
+    # indiv_logical_qubit_fidelity = sum(err_probs[1:min(end, correctable_errors+1)]) # Calculates the logical qubit fidelity by summing the probabilities of correctable errors
+    
+
+   
+
+    # indiv.performance =  Performance(err_probs, err_probs[1],indiv_logical_qubit_fidelity, mean(marginals), p_success)
+    # # Performance(error_probabilities, purified_pairs_fidelity, logical_qubit_fidelity, average_marginal_fidelity, success_probability)
+    # # Sets the fitness value based on the optimization goal
+    # if optimize_for == logical_qubit_fidelity
+    #     indiv.fitness =  indiv.performance.logical_qubit_fidelity
+    # elseif optimize_for == purified_pairs_fidelity
+    #     indiv.fitness =  indiv.performance.purified_pairs_fidelity
+
+    # elseif optimize_for == average_marginal_fidelity
+    #     indiv.fitness =  indiv.performance.average_marginal_fidelity
+    # end
+
+    # if count_success <= 0
+    #     indiv.fitness = 0.0
+    # end
+
+    # return indiv.performance
 
 end
 
@@ -670,7 +795,13 @@ function run_with_constraints!(population::Population, config::Configuration)
         update_selection_history!(population)
        
         # Calculate performance for each individual in parallel using OhMyThreads.jl
-        tmap(indiv -> calculate_performance!(indiv,config.num_simulations,config.purified_pairs,config.num_registers,config.optimize_for,config.advanced_config), population.individuals)
+        tmap(indiv -> calculate_performance!(indiv,
+            config.num_simulations,
+            config.purified_pairs,
+            config.num_registers,
+            config.optimize_for,
+            config.advanced_config.communication_fidelity_in,
+            config.advanced_config.code_distance), population.individuals)
     end
 
 end
@@ -698,7 +829,13 @@ function run_with_constraints_history!(population::Population, config::Configura
         update_selection_history!(population)
 
         # Calculate performance for each individual in parallel using OhMyThreads.jl
-        performances = tmap(indiv -> calculate_performance!(indiv,config.num_simulations,config.purified_pairs,config.num_registers,config.optimize_for,config.advanced_config), population.individuals)
+        performances = tmap(indiv -> calculate_performance!(indiv,
+            config.num_simulations,
+            config.purified_pairs,
+            config.num_registers,
+            config.optimize_for,
+            config.advanced_config.communication_fidelity_in,
+            config.advanced_config.code_distance), population.individuals)
         
         purified_fidelities = [perf.purified_pairs_fidelity for perf in performances]
         # Filter out NaN values
@@ -823,7 +960,7 @@ function sort!(population::Population,num_simulations::Int,purified_pairs::Int,n
     individuals = population.individuals
     # calculate and update each individual's performance
     Threads.@threads for indiv in population.individuals
-        calculate_performance!(indiv, num_simulations, purified_pairs,num_registers, optimize_for, advanced_config) 
+        calculate_performance!(indiv, num_simulations, purified_pairs,num_registers, optimize_for, advanced_config.communication_fidelity_in,advanced_config.code_distance) 
     end
     # update the population with the sorted vector of individuals by fitness
     population.individuals = sort(individuals, by=indiv -> indiv.fitness, rev=true)

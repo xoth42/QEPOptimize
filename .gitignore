@@ -3,4 +3,5 @@
 qevo
 qevo_optimizer
 QuantumHardware
+BPGates.jl
 
