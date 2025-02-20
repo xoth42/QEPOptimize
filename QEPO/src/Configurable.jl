@@ -11,6 +11,14 @@ https://modernjuliaworkflows.org/
 https://www.youtube.com/watch?v=kc9HwsxE1OY
 
 
+Find the commit with fidelity going to 1
+post issue with a way to reproduce error
+and tag Stefan
+
+
+
+
+
 Priority:
 
     1.
@@ -41,8 +49,10 @@ Priority:
     https://github.com/JuliaDocs/DocStringExtensions.jl
 
 
-
-
+    4. 
+    verifying if circuits are distillation circuits with proper form
+    Can always be fixed after the simulation runs.
+    
 
 Later:
     3.1 Testing 
