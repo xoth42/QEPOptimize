@@ -8,28 +8,29 @@ valid_qubits::Array{Int} = ([ 43, 44, 45, 46, 47,  48, 49, 50])
 hw_cfg = HardwareConfiguration(dataPath,valid_qubits)
 adv_cfg = AdvancedConfiguration()
 config = Configuration(hw_cfg,adv_cfg)
-config
+# config
 using QEPO.Optimizer
 pop = Population()
-config.num_simulations = 100
+config.num_simulations = 1000
 config.max_gen = 20
-
+config.advanced_config.communication_fidelity_in = .9 # test really bad fidelity
 # create a test thread data object
 # td = ThreadData()
 
 # initialize_pop_with_constraints!(pop,config) 
 run_with_constraints_history!(pop,config)
-config.optimize_for
-display_top_circuits(pop.individuals,5)
-pop.individuals[1]
-config.advanced_config.communication_fidelity_in
-# plot_performance_metrics(pop)
-config.advanced_config.population_size
 
-print(pop.individuals[1].ops)
-using QEPO.Optimizer: calculate_performance!
-calculate_performance!(pop.individuals[1],20,1,4,config.optimize_for,config.advanced_config)
-for i in 1:20
-    calculate_performance!(pop.individuals[i],20,1,4,config.optimize_for,config.advanced_config)
+# config.optimize_for
+display_top_circuits(pop.individuals,3)
+# pop.individuals[1]
+# config.advanced_config.communication_fidelity_in
+# # plot_performance_metrics(pop)
+# config.advanced_config.population_size
 
-end
+# print(pop.individuals[1].ops)
+# using QEPO.Optimizer: calculate_performance!
+# calculate_performance!(pop.individuals[1],20,1,4,config.optimize_for,config.advanced_config)
+# for i in 1:20
+#     calculate_performance!(pop.individuals[i],20,1,4,config.optimize_for,config.advanced_config)
+
+# end

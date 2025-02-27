@@ -2,6 +2,7 @@
 BPGates = "2c1a90cd-bec4-4415-ae35-245016909a8f"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Debugger = "31a5f54b-26ea-5ae9-a837-f05ce5417438"
 IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
 OhMyThreads = "67456a42-1dca-4109-a031-0a68de7e3ad5"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
