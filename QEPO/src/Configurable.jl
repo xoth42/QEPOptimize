@@ -94,9 +94,9 @@ module Configurable
     using DataFrames
 
     """What the optimizer uses to define success """
-    @enum  CostFunction logical_qubit_fidelity purified_pairs_fidelity average_marginal_fidelity
+    @enum  CostFunction logical_qubit_fidelity purified_pairs_fidelity average_marginal_fidelity success_probability
     
-    export CostFunction, logical_qubit_fidelity, purified_pairs_fidelity, average_marginal_fidelity
+    export CostFunction, logical_qubit_fidelity, purified_pairs_fidelity, average_marginal_fidelity, success_probability
     export AbstractConfiguration, AbstractHardwareConfiguration, AbstractAdvancedConfiguration
     export HardwareConfiguration, AdvancedConfiguration, Configuration
    
