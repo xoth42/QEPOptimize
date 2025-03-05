@@ -7,7 +7,7 @@ dataPath = "QEPO/data/ibm_sherbrooke_calibrations_2024-10-09.csv"
 valid_qubits::Array{Int} = ([ 43, 44, 45, 46, 47,  48, 49, 50])
 hw_cfg = HardwareConfiguration(dataPath,valid_qubits)
 adv_cfg = AdvancedConfiguration()
-adv_cfg.population_size = 50
+adv_cfg.population_size = 100
 adv_cfg.children_per_pair = 2
 adv_cfg.starting_pop_multiplier = 400
 adv_cfg.starting_ops = 5
@@ -22,15 +22,20 @@ using QEPO.Optimizer
 pop = Population()
 config.num_simulations = 1000
 config.max_gen = 10
-config.advanced_config.communication_fidelity_in = .1 # test really bad fidelity
+config.advanced_config.communication_fidelity_in = .5
 # create a test thread data object
 # td = ThreadData()
-config.optimize_for = average_marginal_fidelity
+# config.optimize_for = average_marginal_fidelity
+config.optimize_for = purified_pairs_fidelity
+
 # config.advanced_config.p_add_operation = 0.5
 # initialize_pop_with_constraints!(pop,config) 
+# debug
+# @run run_with_constraints_history!(pop,config)
+
 run_with_constraints_history!(pop,config)
 
-sort!(pop.individuals)
+# sort!(pop.individuals)
 
 # config.optimize_for
 display_top_circuits(pop.individuals,3)

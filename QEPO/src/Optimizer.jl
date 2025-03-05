@@ -690,8 +690,10 @@ function initialize_pop_with_constraints!(population::Population, config::Config
 
         """ Keep BellSwap gates ordered while Randomizing the other operations to create a diverse set of quantum circuits """
         all_ops = vcat(noisy_random_gates, random_measurements)
-        noisy_random_gates_measurements = all_ops[length(noisy_BellSwap)+1:end]
-        shuffled_ops = vcat(noisy_BellSwap, noisy_random_gates_measurements[randperm(length(noisy_random_gates_measurements))])
+        # noisy_random_gates_measurements = all_ops[length(noisy_BellSwap)+1:end]
+        # shuffled_ops = vcat(noisy_BellSwap, noisy_random_gates_measurements[randperm(length(noisy_random_gates_measurements))])   
+        shuffled_ops = vcat(all_ops[randperm(length(all_ops))])
+
         # indiv.ops =  convert(Vector{Union{PauliNoiseBellGate{CNOTPerm}, NoisyBellMeasureNoisyReset, PauliNoiseBellGate{BellSwap}}}, shuffled_ops)  # Converts the operations into a vector of gate types
 
         # indiv.ops =  convert(QuantumOperation, shuffled_ops)  # Converts the 
@@ -1003,7 +1005,7 @@ function new_child(indiv::Individual, indiv2::Individual, max_ops::Int,num_regis
     # Combining the selected operations from both parents
     # TODO: fix types here?
     new_indiv.ops = vcat(
-        indiv.ops[1:num_registers*(num_registers-1)÷2],  # Include BellSwap gates
+        # indiv.ops[1:num_registers*(num_registers-1)÷2],  # Include BellSwap gates
         ops1[1:num_ops1],
         ops2[1:num_ops2]
     )[1:min(end, max_ops)]  # Ensure the total number of operations does not exceed max_ops
@@ -1179,14 +1181,24 @@ function gain_op_with_constraints(indiv::Individual,  calibration_data::Dict, va
     if isempty(new_indiv.ops)
         push!(new_indiv.ops, rand_op)
     else
-        """ Insert the random operation at a random position after BellSwap gates """
-        # Search through the ops to find the last consecutive noisybellswaps
-        i = 1
-        while i <= length(new_indiv.ops) && isa(new_indiv.ops[i], BellSwap)
-            i += 1
+        position = 1
+        if length(new_indiv.ops) == 2
+            # edge case, ignore bellswaps and just add the gate somewhere
+            position = rand((1,2))
+        else
+            """ Insert the random operation at a random position after BellSwap gates """
+            # TODO: remove consideration for BellSwaps (to be removed)
+
+            # Search through the ops to find the last consecutive noisybellswaps
+            i = 1
+            while i <= length(new_indiv.ops) && isa(new_indiv.ops[i], BellSwap)
+                i += 1
+            end
+            # i = num_registers*(num_registers-1)/2         # number of NoisyBellSwap gate is r*(r-1)/2 // not necessarlly true, especially after running long simulations where noisybellswaps are dropped
+            # position = rand(i + 1 : length(new_indiv.ops)) |> Int   # Ensures integer index
+            position = rand(i: length(new_indiv.ops)) |> Int   # Ensures integer index
+
         end
-        # i = num_registers*(num_registers-1)/2         # number of NoisyBellSwap gate is r*(r-1)/2 // not necessarlly true, especially after running long simulations where noisybellswaps are dropped
-        position = rand(i + 1 : length(new_indiv.ops)) |> Int   # Ensures integer index
         insert!(new_indiv.ops, position, rand_op)
     end
 
