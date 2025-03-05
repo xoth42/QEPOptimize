@@ -1,15 +1,16 @@
 ## Quantum Entanglement Purification Optimizer
 
 
-This repository is intended to organize and reform the code from QuantumHardware and qevo_optimizer,and qevo, while being readable, extendable, and abstracted as much as possible for ease of later advancements. 
+This repository is intended to organize and reform the code from QuantumHardware, qevo_optimizer, and qevo, while being readable, extendable, and abstracted as much as possible for ease of later advancements. 
 
 # Building Plan:
 
 The optimizer is run using two parts: 
 1.  QEPO: The main runner for the genetic optimizer
 2.  Configurable: this manages all parameters needed to run the optimizer, and has methods to set up various types of optimizers on various types of hardware
-
-
+3.  Library interface
+    1.  Simplifying input/output and usage 
+4.  Terminal/interactable
 
 Then, a UI will be created that aims to meet these goals:
 
