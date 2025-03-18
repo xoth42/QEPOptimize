@@ -1,5 +1,5 @@
 # TODO (low priority) this would be a great place to use an Enum or, even better, an algebraic data type (ADT)
-const HISTORIES = [:manual, :survivor, :random, :child, :drop_m, :gain_m, :swap_m, :ops_m]
+const HISTORIES = [:manual, :survivor, :random, :child, :drop, :gain, :swap, :opsmutate]
 
 "A convenient structure to store various purification performance metrics."
 struct Performance
@@ -19,6 +19,9 @@ end
 
 Performance() = Performance(Float64[], 0.0, 0.0, 0.0, 0.0)
 
+Base.copy(p::Performance) = Performance(copy(p.error_probabilities), p.purified_pairs_fidelity, p.logical_qubit_fidelity, p.average_marginal_fidelity, p.success_probability)
+
+
 "An individual (circuit) in the population we are evolving"
 mutable struct Individual
     "How did this individual come to be (conventionally a symbol from the `HISTORIES` list)"
@@ -36,3 +39,5 @@ Individual() = Individual(:manual)
 Individual(history::Symbol) = Individual(history, [])
 Individual(ops::Vector) = Individual(:manual, ops, Performance(), 0.0)
 Individual(history::Symbol, ops) = Individual(history, ops, Performance(), 0.0)
+
+Base.copy(i::Individual) = Individual(i.history, copy(i.ops), copy(i.performance), fitness)

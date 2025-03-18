@@ -1027,39 +1027,7 @@ function gain_op_with_constraints(indiv::Individual,  calibration_data::Dict, va
     return new_indiv
 end
 
-"""
-    mutate_with_constraints(indiv::Individual)::Individual
 
-    applying the appropriate mutation function to each of its gates, returns new individual
-"""
-function mutate_with_constraints(indiv::Individual)::Individual
-    if length(indiv.ops) == 0
-        return indiv
-    end
-    new_indiv = deepcopy(indiv)
-    # Apply mutation only to PauliNoiseBellGate{CNOTPerm} and NoisyBellMeasureNoisyReset operations
-    new_indiv.ops = [isa(gate, PauliNoiseBellGate{CNOTPerm}) || isa(gate, NoisyBellMeasureNoisyReset) ? mutate(gate) : gate for gate in new_indiv.ops]
-    new_indiv.history =  "ops_m"
-    return new_indiv
-end
-
-"""
-    mutate(gate::NoisyBellMeasureNoisyReset)
-
- The measurement component (X,Y,Z) of the gate is randomized while keeping the other parameters (p, px, py, pz) the same
-"""
-function mutate(gate::NoisyBellMeasureNoisyReset)
-    return NoisyBellMeasureNoisyReset(rand(BellMeasure, gate.m.sidx), gate.p, gate.px, gate.py, gate.pz)
-end
-
-"""
-    mutate(gate::PauliNoiseBellGate)
-
- The permutation component of the gate is randomized while keeping the noise parameters (px, py, pz) the same
-"""
-function mutate(gate::PauliNoiseBellGate)
-    return PauliNoiseBellGate(rand(CNOTPerm, gate.g.idx1, gate.g.idx2), gate.px, gate.py, gate.pz)
-end
 
 
 #######################################################################################
