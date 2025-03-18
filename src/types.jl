@@ -50,4 +50,4 @@ mutable struct Population
     selection_history::Dict{Symbol,Vector{Int64}}
 end
 
-Population() = new([], Dict{Symbol, Vector{Int64}}())
+Population() = Population([], Dict{Symbol, Vector{Int64}}())

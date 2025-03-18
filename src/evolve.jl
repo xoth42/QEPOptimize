@@ -12,7 +12,6 @@ function step!(
     number_registers::Int=1,
     purified_pairs::Int=1,
     num_simulations::Int=100,
-    number_registers::Int=1,
     pop_size::Int=100,
 )
     # Mark existing individuals as survivors
