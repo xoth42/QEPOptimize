@@ -84,10 +84,6 @@ module Optimizer
     The functions with ! are meant to change every part of the population, not the config.
 """
 
-
-# TODO: change these to an enum
-hist_list = ["manual", "survivor", "random", "child", "drop_m", "gain_m", "swap_m", "ops_m"]
-
 using Plots
 using Base.Threads #  for multithreading
 using Random
@@ -129,15 +125,7 @@ is_droppable(::NoisyBellMeasureNoisyReset) = true
 
 
 
-mutable struct Individual
-    history::String
-    ops::Vector{Any}      # A vector containing a sequence of quantum operations that make up the individual's circuit
-    performance::Performance
-    fitness::Float64
-    Individual() = new("", [], Performance(Float64[], 0.0, 0.0, 0.0, 0.0), 0.0)
-    Individual(history::String) = new(history, [], Performance(Float64[], 0.0, 0.0, 0.0, 0.0), 0.0)
-    Individual(history::String, ops::Vector{Any}, performance::Performance, fitness::Float64) = new(history, ops, performance, fitness)
-end
+
 
 mutable struct Population
     individuals::Vector{Individual}
