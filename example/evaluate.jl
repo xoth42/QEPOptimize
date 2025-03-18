@@ -14,14 +14,15 @@ no_op_circuit = Individual([])
 for network_fidelity in [0.7, 0.8, 0.9, 0.95]
     num_simulations = 1000000
     network_fidelity = 0.9
+    noises = [NetworkFidelity(network_fidelity)]
 
-    p1 = calculate_performance!(no_op_circuit; num_simulations, network_fidelity)
+    p1 = calculate_performance!(no_op_circuit; num_simulations, noises)
 
     @assert p1.success_probability == 1
     @assert abs(p1.error_probabilities[1] - network_fidelity) < 10/sqrt(num_simulations)
     @assert abs(p1.average_marginal_fidelity - network_fidelity) < 10/sqrt(num_simulations)
 
-    p2 = calculate_performance!(no_op_circuit; num_simulations, network_fidelity, number_registers=3, purified_pairs=3)
+    p2 = calculate_performance!(no_op_circuit; num_simulations, noises, number_registers=3, purified_pairs=3)
     @assert p2.success_probability == 1
     @assert abs(p2.error_probabilities[1] - network_fidelity^3) < 10/sqrt(num_simulations)
     @assert abs(p2.average_marginal_fidelity - network_fidelity) < 10/sqrt(num_simulations)
@@ -34,19 +35,19 @@ end
 # The example circuit from figure 1 of https://quantum-journal.org/papers/q-2019-02-18-123/
 
 network_fidelity = 0.9
+noises = [NetworkFidelity(network_fidelity)]
 number_registers = 2
 purified_pairs = 1
-pxyz = f_in_to_pauli(network_fidelity)
 
 
 # the CNOT gate is controlled on 1, targeting 2
 # then we measure qubit 2
 # many permutations of this circuit should give similar results
-simple_purification = Individual([CNOTPerm(1,1,2,1), NoisyBellMeasureNoisyReset(BellMeasure(1,2),0,pxyz...)])
+simple_purification = Individual([CNOTPerm(1,1,2,1), BellMeasure(1,2)])
 
 num_simulations = 1000000
 
-p = calculate_performance!(simple_purification; num_simulations, network_fidelity, number_registers, purified_pairs)
+p = calculate_performance!(simple_purification; num_simulations, noises, number_registers, purified_pairs)
 
 # check formula from appendix B
 F = network_fidelity
@@ -66,10 +67,9 @@ f_ins = [0.01; 0.05:0.05:0.95; 0.99; 0.999]
 f_outs = Float64[]
 probs = Float64[]
 for f in f_ins
-    network_fidelity = f
-    pxyz = f_in_to_pauli(network_fidelity)
-    simple_purification = Individual([CNOTPerm(1,1,2,1), NoisyBellMeasureNoisyReset(BellMeasure(1,2),0,pxyz...)])
-    p = calculate_performance!(simple_purification; num_simulations, network_fidelity, number_registers, purified_pairs)
+    noises = [NetworkFidelity(f)]
+    simple_purification = Individual([CNOTPerm(1,1,2,1), BellMeasure(1,2)])
+    p = calculate_performance!(simple_purification; num_simulations, noises, number_registers, purified_pairs)
     push!(f_outs, p.purified_pairs_fidelity)
     push!(probs, p.success_probability)
 end

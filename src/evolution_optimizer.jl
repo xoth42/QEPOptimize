@@ -56,29 +56,20 @@ function calculate_performance!(
     purified_pairs::Int=1,
     number_registers::Int=1, # TODO (low priority) this should be by-default derived from `indiv`
     code_distance::Int=1,
-    network_fidelity::Float64=0.9
+    noises=[NetworkFidelity(0.9)]
 )
 
     count_success = 0
     counts_marginals = zeros(Int,purified_pairs) # an array to find F₁, F₂, …, Fₖ (tracks how often each purified bell pair is in the desired state)
     counts_nb_errors = zeros(Int,purified_pairs+1) # an array to find P₀, P₁, …, Pₖ (tracks how often a given total number of errors happens) Careful with indexing it as it includes a P₀!
 
-    # TODO this will need to support much more arbitrary types of initial noise, so `network_fidelity` might not be the best possible input parameter
-    initial_noise_circuit = [PauliNoiseOp(i, f_in_to_pauli(network_fidelity)...) for i in 1:number_registers]
-
-    # TODO this will need to transform an otherwise noiseless circuit into a noisy one, with parameters that are provided to this function, similar to `network_fidelity`
-    # gate_fidelity would turn CNOTPerm gates into gates wrapped into noise
-    # T1/T2 noise will add noise that happens even during wait time
-    # network_fidelity would turn BellMeasure into NoisyBellMeasureNoisyReset(...)
-    # measurement_fidelity would do the same
-    # Probably it would be best to define a `noisify(::AbstractNoise, ::AbstractOperation)::AbstractOperation`
-    # Or even `noisify_circuit(::AbstractNoise, ::Vector{<:AbstractOperation})` so that we can also cover the T1, T2 noise
-    # TODO XXX but highest priority is just taking BellMeasure(i,j) and returning NoisyBellMeasureNoisyReset(BellMeasure(i,j), 0, f_in_to_pauli(network_fidelity)...)
     noisy_purification_circuit = indiv.ops
+    for n in noises
+        noisy_purification_circuit = noisify_circuit(n, noisy_purification_circuit; number_registers)
+    end
 
     for _ in 1:num_simulations
-        initial_noisy_state, res = mctrajectory!(BellState(number_registers), initial_noise_circuit) # network noise model circuit
-        purified_state, res = mctrajectory!(initial_noisy_state, indiv.ops)
+        purified_state, res = mctrajectory!(BellState(number_registers), noisy_purification_circuit)
         # If the circuit execution was reported as 'successful'
         if res == continue_stat
             count_success += 1
@@ -109,17 +100,4 @@ function calculate_performance!(
     indiv.performance =  Performance(err_probs, err_probs[1], indiv_logical_qubit_fidelity, mean(marginals), p_success)
 
     return indiv.performance
-end
-
-
-
-"""
-    f_in_to_pauli(f_in)
-
-Converts the `f_in` parameter to Pauli X, Y, and Z noise,
-used in `calculate_performance!` to set up the initial noise.
-"""
-function f_in_to_pauli(f_in)
-    px = py = pz = (1 - f_in) / 3
-    return px, py, pz
 end
