@@ -102,21 +102,7 @@ export generate_noisy_BellSwap_ops_for_individual, long_range_entanglement_gener
 
 ### Genetic optimizer setup
 
-"""A convenient structure to store various purification performance metrics."""
-struct Performance
-    """a list of probabilities as such [probability for no errors, probability for one Bell pair to be eroneous, probability for two Bell pairs to be eroneous, ..., probability for all Bell pairs to be eroneous]"""
-    error_probabilities::Vector{Float64}
-    """probability for no errors"""
-    purified_pairs_fidelity::Float64
-    """(TODO this is complicated and we are not using it right now) the fidelity of the logical qubit, as measured after teleportation with the purified bell pairs followed by error correction"""
-    logical_qubit_fidelity::Float64
-    """the average marginal fidelity of all purified pairs (note: correlation of errors is ignored here):
-    Fidelity of i-th Bell pair is `Fᵢ = ⟨A|Trᵢ(ρ)|A⟩` where `Trᵢ` is "partial trace for all subspaces except the i-th one".
-    The average marginal fidelity is `mean([F₁, F₂, ... Fₖ])`."""
-    average_marginal_fidelity::Float64
-    """the proportion of runs of a given protocol that do not have detected errors (i.e. Alice and Bob do not measure any errors)"""
-    success_probability::Float64
-end
+
 
 # Define PauliNoiseBellGate and others to be droppable/not
 is_droppable(::Any) = false
