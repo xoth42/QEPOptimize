@@ -96,3 +96,38 @@ end
 function cull!(population::Population, population_size::Int)
     population.individuals = population.individuals[1:population_size]
 end
+
+
+"""
+Initialize a population of quantum circuits, sort, and cull.
+"""
+function initialize_pop!(
+    population::Population;
+    start_ops::Int=10,
+    start_pop_size::Int=1000,
+    number_registers::Int=1,
+    pop_size::Int=100,
+    num_simulations::Int=100,
+    purified_pairs::Int=1,
+    code_distance::Int=1,
+    noises=[NetworkFidelity(0.9)]
+)
+    valid_pairs=1:number_registers # TODO (low priority) decouple valid_pairs from number_registers
+
+    for _ in 1:start_pop
+        indiv = Individual(:random)
+        for _ in 1:start_ops
+            push!(indiv.ops, rand_op(valid_pairs))
+        end
+    end
+
+    simulate_and_sort!(
+        population;
+        num_simulations,
+        purified_pairs,
+        number_registers,
+        code_distance,
+        noises
+    )
+    cull!(population,pop_size)
+end

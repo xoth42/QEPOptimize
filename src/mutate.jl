@@ -47,8 +47,18 @@ end
 function gain_op(indiv::Individual; valid_pairs)
     new_ops = copy(indiv.ops)
 
+    op = rand_op(valid_pairs)
+
+    position = rand(1:length(new_ops)+1)
+
+    insert!(new_ops, position, op)
+
+    return Individual(:gain, new_ops)
+end
+
+function rand_op(valid_pairs)
     # weighted randomly select a CNOTPerm or a measurement # TODO (low priority) make the selection and weights configurable
-    rand_op = if rand() < 0.7
+    op = if rand() < 0.7
         i1, i2 = randperm(length(valid_pairs))[1:2]
         pair1, pair2 = valid_pairs[i1], valid_pairs[i2]
         random_gate = rand(CNOTPerm, pair1, pair2)
@@ -56,10 +66,5 @@ function gain_op(indiv::Individual; valid_pairs)
         pair = rand(valid_pairs)
         rand(BellMeasure, pair)
     end
-
-    rand_position = rand(1:length(new_ops)+1)
-
-    insert!(new_ops, rand_position, rand_op)
-
-    return Individual(:gain, new_ops)
+    return op
 end
