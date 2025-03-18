@@ -104,10 +104,7 @@ export generate_noisy_BellSwap_ops_for_individual, long_range_entanglement_gener
 
 
 
-# Define PauliNoiseBellGate and others to be droppable/not
-is_droppable(::Any) = false
-is_droppable(::PauliNoiseBellGate) = true
-is_droppable(::NoisyBellMeasureNoisyReset) = true
+
 
 
 
@@ -883,35 +880,7 @@ function swap_op_with_constraints(indiv::Individual)::Individual
     return new_indiv
 end
 
-"""
-    drop_op_with_constraints(indiv::Individual)::Individual
 
-    mutating methods with gate connectivity constraints
-
-    TODO
-    make trait checking function
-        "is_droppable"
-        default is true, subtypes can make it false
-
-    Define is_droppable for any object
-    So you can use gates from other libraries etc
-
-"""
-function drop_op_with_constraints(indiv::Individual)::Individual
-    new_indiv = deepcopy(indiv)
-    # Filter the indices of operations that can be dropped
-    drop_indices = [i for i in 1:length(new_indiv.ops) if is_droppable(new_indiv.ops[i])]
-
-    # If there are no droppable operations, return the individual as is
-    if  isempty(drop_indices)
-        return new_indiv
-    else
-        # Randomly select and delete one of the droppable operations
-        deleteat!(new_indiv.ops, rand(drop_indices))
-        new_indiv.history = "drop_m"
-        return new_indiv
-    end
-end
 
 """
     gain_op_with_constraints(indiv::Individual,  calibration_data::Dict, valid_qubits::Array{Int},purified_pairs,num_registers,f_in)::Individual
