@@ -14,7 +14,10 @@ function mutate(indiv::Individual)
 end
 
 function mutate(gate::BellMeasure)
-    return rand(BellMeasure, gate.m.sidx) # TODO (low priority) this `rand` is a "pun"; should be changed to use a keyword argument to specify affected qubit, but that is a breaking change in BPGates.jl
+    # gate.m typo?
+    # return rand(BellMeasure, gate.m.sidx) # TODO (low priority) this `rand` is a "pun"; should be changed to use a keyword argument to specify affected qubit, but that is a breaking change in BPGates.jl
+    # quick fix:
+    return rand(BellMeasure, gate.sidx)
 end
 
 function mutate(gate::CNOTPerm)
@@ -58,7 +61,8 @@ end
 
 function rand_op(valid_pairs)
     # weighted randomly select a CNOTPerm or a measurement # TODO (low priority) make the selection and weights configurable
-    op = if rand() < 0.7 && length(valid_pairs) >= 1
+   
+    op = if rand() < 0.7 && length(valid_pairs) >= 2
         i1, i2 = randperm(length(valid_pairs))[1:2]
         pair1, pair2 = valid_pairs[i1], valid_pairs[i2]
         random_gate = rand(CNOTPerm, pair1, pair2)

@@ -22,7 +22,7 @@ function step!(
 
     # TODO parents and offspring circuits
 
-    add_mutations!(population.individuals; max_ops, new_mutants, valid_pairs=1:number_registers) # TODO (low priority) decouple valid_pairs from number_registers
+    add_mutations!(population.individuals; max_ops, valid_pairs=1:number_registers) # TODO (low priority) decouple valid_pairs from number_registers
 
     # Sort the population by fitness and cull the excess individuals to maintain the population size
     simulate_and_sort!(
@@ -48,16 +48,18 @@ function add_mutations!(
     mutants = Individual[]
 
     # For every mutation per individual, up to the limit
-    for _ in 1:new_mutants
-        l = length(indiv.ops)
-        drop_op::Bool   = rand() < p_drop   && l > 0
-        gain_op::Bool   = rand() < p_gain   && l < max_ops
-        # swap_op::Bool   = TODO
-        mutate_op::Bool = rand() < p_mutate && l > 0
+    for indiv in individuals
+        for _ in 1:new_mutants
+            l = length(indiv.ops)
+            isDrop_op::Bool   = rand() < p_drop   && l > 0
+            isGain_op::Bool   = rand() < p_gain   && l < max_ops
+            # swap_op::Bool   = TODO
+            isMutate_op::Bool = rand() < p_mutate && l > 0
 
-        drop_op && push!(mutants, drop_op(indiv))
-        gain_op && push!(mutants, gain_op(indiv; valid_pairs))
-        mutate_op && push!(mutants, mutate(indiv))
+            isDrop_op && push!(mutants, drop_op(indiv))
+            isGain_op && push!(mutants, gain_op(indiv; valid_pairs))
+            isMutate_op && push!(mutants, mutate(indiv))
+        end
     end
 
     ## add all children back to the individuals vector
@@ -80,7 +82,7 @@ function simulate_and_sort!(
 )
     # calculate and update each individual's performance
     Threads.@threads for indiv in population.individuals
-        calculate_performance!(indiv,
+        calculate_performance!(indiv;
             num_simulations,
             purified_pairs,
             number_registers,
@@ -93,6 +95,8 @@ end
 
 "Reduce the population size to the target `population_size` (assumes pop is already sorted)"
 function cull!(population::Population, population_size::Int)
+    # Basic assertion to make sure population is correct size
+    @assert length(population.individuals) >= population_size 
     population.individuals = population.individuals[1:population_size]
 end
 
@@ -114,12 +118,17 @@ function initialize_pop!(
     valid_pairs=1:number_registers # TODO (low priority) decouple valid_pairs from number_registers
 
     for _ in 1:start_pop_size
+        # Create an individual
         indiv = Individual(:random)
         for _ in 1:start_ops
+            # Create operations
             push!(indiv.ops, rand_op(valid_pairs))
         end
+        
+        # Add individual to the population
+        push!(population.individuals, indiv)
     end
-
+    @debug "Initializing population, size: $(length(population.individuals))"
     simulate_and_sort!(
         population;
         num_simulations,
