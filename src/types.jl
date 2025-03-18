@@ -41,3 +41,13 @@ Individual(ops::Vector) = Individual(:manual, ops, Performance(), 0.0)
 Individual(history::Symbol, ops) = Individual(history, ops, Performance(), 0.0)
 
 Base.copy(i::Individual) = Individual(i.history, copy(i.ops), copy(i.performance), fitness)
+
+
+mutable struct Population
+    "All individuals in the population"
+    individuals::Vector{Individual}
+    "Keeps track of the selection history for different types of individuals (e.g., survivors, mutants)"
+    selection_history::Dict{Symbol,Vector{Int64}}
+end
+
+Population() = new([], Dict{Symbol, Vector{Int64}}())

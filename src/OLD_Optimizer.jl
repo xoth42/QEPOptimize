@@ -110,17 +110,6 @@ export generate_noisy_BellSwap_ops_for_individual, long_range_entanglement_gener
 
 
 
-mutable struct Population
-    individuals::Vector{Individual}
-    selection_history::Dict{String,Vector{Int64}} # Keeps track of the selection history for different types of individuals (e.g., survivors, mutants)
-    # help in understanding which types of individuals contribute most to the improvement of the population
-    Population() = new([], Dict{String, Vector{Int64}}())
-    Population(individuals, selection_hist) = new(individuals,selection_hist)
-
-end
-
-
-
 # Create as struct for each thread's data used in calculate_performance
 mutable struct ThreadData
     count_success::Int64
