@@ -58,7 +58,7 @@ end
 
 function rand_op(valid_pairs)
     # weighted randomly select a CNOTPerm or a measurement # TODO (low priority) make the selection and weights configurable
-    op = if rand() < 0.7
+    op = if rand() < 0.7 && length(valid_pairs) >= 1
         i1, i2 = randperm(length(valid_pairs))[1:2]
         pair1, pair2 = valid_pairs[i1], valid_pairs[i2]
         random_gate = rand(CNOTPerm, pair1, pair2)

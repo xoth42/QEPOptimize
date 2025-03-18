@@ -113,7 +113,7 @@ function initialize_pop!(
 )
     valid_pairs=1:number_registers # TODO (low priority) decouple valid_pairs from number_registers
 
-    for _ in 1:start_pop
+    for _ in 1:start_pop_size
         indiv = Individual(:random)
         for _ in 1:start_ops
             push!(indiv.ops, rand_op(valid_pairs))
