@@ -4,4 +4,5 @@ qevo
 qevo_optimizer
 QuantumHardware
 BPGates.jl
-
+Manifest.toml
+meeting_notes.txt
