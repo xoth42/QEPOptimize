@@ -1,5 +1,5 @@
 module QEPO
 
-include("Optimizer.jl")
+include("evolution_optimizer.jl")
 
 end

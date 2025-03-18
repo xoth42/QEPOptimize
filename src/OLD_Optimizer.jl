@@ -1,6 +1,6 @@
 module Optimizer
 
-# TODO:  add communication between qubits and hardware-specific errors from csv data to calculate_performance! Not the 'example error rates' 
+# TODO:  add communication between qubits and hardware-specific errors from csv data to calculate_performance! Not the 'example error rates'
 
 # TODO update exports, clean up what actually needs to be exported and what can remain internal to this file
 # TODO: improve clarity of use and document how to use everything all together
@@ -10,13 +10,13 @@ module Optimizer
 # TODO: rewrite gain_op_with_constraints
 
 """
-    Organize the noise in the ciruit. Some noise is in mutate, calculate performance, etc. 
+    Organize the noise in the ciruit. Some noise is in mutate, calculate performance, etc.
 
     Abstract away noise in initial state and in circuit
 
     Thermal relaxation notes for later:
     # add thermal relaxation noise T1 T2 into circuits
-    # TODO: incorporate given hardware noise? 
+    # TODO: incorporate given hardware noise?
     # t1_avg, t2_avg, gate_times = 286e-6, 251e-6, 533e-9  # example for testing: average T1, T2 and t on 'ibmq_sherbrooke'
     # λ₁, λ₂ = thermal_relaxation_error_rate(t1_avg, t2_avg, gate_times)
     # noisy_ops = add_thermal_relaxation_noise(indiv.ops, λ₁, λ₂)
@@ -30,11 +30,11 @@ module Optimizer
     ***SETTING UP PARAMETERS
     In order to run the optimizer, these parameters are needed:
 
-    1.  General optimizer parameters 
-        1a. Most important bits 
+    1.  General optimizer parameters
+        1a. Most important bits
         Stored in the 'Configuration' struct
 
-        num_simulations::Int        
+        num_simulations::Int
         raw_bell_pairs::Int         # (n) incoming bell pairs
         purified_pairs::Int         # (k) outgoing bell pairs
         num_registers::Int          # amount of registers
@@ -59,8 +59,8 @@ module Optimizer
         p_add_operation::Float64
         p_swap_operation::Float64
         p_mutate_operation::Float64
-        
-        
+
+
         1c. Hardware specifications -> for IBM calibration data only, at the moment
         Stored in the 'HardwareConfiguration' struct
 
@@ -69,10 +69,10 @@ module Optimizer
         valid_qubits::Array{Int}
 
     2. Formatting
-        All of these parameters are stored like so, with the HardwareConfiguration and AdvancedConfiguration going inside of the Configuration struct, under the names 
-        hardware_config and advancd_config, respectively. 
+        All of these parameters are stored like so, with the HardwareConfiguration and AdvancedConfiguration going inside of the Configuration struct, under the names
+        hardware_config and advancd_config, respectively.
 
-    ***RUNNING THE OPTIMIZER 
+    ***RUNNING THE OPTIMIZER
     Once the config is set up and stored in a variable, create your population that will be used for the optimizer. For example this makes an empty population:
             population = Population()
     Now, you can call these functions:
@@ -302,7 +302,7 @@ function push_noise!(circuit, gate::PauliNoiseBellGate{T}, λ₁, λ₂) where T
 end
 
 push_noise!(circuit, gate::NoisyBellMeasureNoisyReset, λ₁, λ₂) = []  # No thermal relaxation added to measurement
-push_noise!(circuit, any::Any, λ₁, λ₂) = [] 
+push_noise!(circuit, any::Any, λ₁, λ₂) = []
 function add_idle_noise!(circuit, time_table, step, λ₁, λ₂)
     for q in 1:size(time_table, 2)
         if !time_table[step, q]  # If the qubit is idle at this time step
@@ -316,7 +316,7 @@ end
 """
     reset_population!(population,population_size::Int,starting_pop_multiplier::Int)
 
-    Initialize individuals with empty operations and default performance 
+    Initialize individuals with empty operations and default performance
 """
 function reset_population!(population,population_size::Int,starting_pop_multiplier::Int)
     reset_selection_history!(population)
@@ -334,7 +334,7 @@ end
 
 
     updates the individual's performance and fidelity, and returns it
-        
+
     simulates quantum operations using Monte Carlo trajectories to evaluate the performance of a given quantum purification circuit
 
     Uses a the supplied initial state
@@ -349,10 +349,10 @@ function calculate_performance!(indiv::Individual, num_simulations::Int, purifie
     # start with modeling 'clean' operations on noisy circuits
 
     for _ in 1:num_simulations
-        
+
         # 1. randomize initial state
         initial_noisy_state, res = mctrajectory!(BellState(number_registers), initial_noise_circuit) # network noise model circuit
-        purified_state, res = mctrajectory!(initial_noisy_state, indiv.ops) 
+        purified_state, res = mctrajectory!(initial_noisy_state, indiv.ops)
         # If the circuit execution was 'successful'
         if res == continue_stat
             count_success += 1
@@ -369,7 +369,7 @@ function calculate_performance!(indiv::Individual, num_simulations::Int, purifie
         end
     end
 
-        # count_success = 0 
+        # count_success = 0
         # counts_marginals = zeros(Int,purified_pairs) # an array to find F₁, F₂, …, Fₖ (tracks how often each purified bell pair is in the desired state)
         # # probability of having 0, 1, 2, ... k 'erroneous' BP's
         # counts_nb_errors = zeros(Int,purified_pairs+1) # an array to find P₀, P₁, …, Pₖ -- Careful with indexing it!
@@ -377,11 +377,11 @@ function calculate_performance!(indiv::Individual, num_simulations::Int, purifie
         # Threads.@threads for _ in 1:num_simulations # TODO from Stefan: this is a good place for threads
         # for _ in 1:num_simulations
 
-        # Multithreading 
+        # Multithreading
         # TODO: redo this implementation, so that it uses less space. right now it creates 2 n-vectors for each thread, which may be a lot
         # Get amount of threads
         # threads = Threads.nthreads()
-    
+
         # # Fill a vector with empty structs for each thread
         # threads_data = fill(ThreadData(
         #     0,                              # count successes
@@ -389,7 +389,7 @@ function calculate_performance!(indiv::Individual, num_simulations::Int, purifie
         #     zeros(Int, purified_pairs+1),   # counts_nb_errors
         #     0),                             # err couunt
         # threads)
-        
+
         # # Figure out how many simulations each thread will run
         # simulations_per_thread = div(num_simulations, threads)
         # # Loop through all of the data containers (eg, threads)
@@ -420,13 +420,13 @@ function calculate_performance!(indiv::Individual, num_simulations::Int, purifie
         # counts_marginals = sum([thread.counts_marginals for thread in threads_data])
         # counts_nb_errors = sum([thread.counts_nb_errors for thread in threads_data])
 
-        
+
 
     if count_success == 0
         @warn "No successful simulations; marginals and error probabilities will be undefined."
-    
+
     end
-    
+
     p_success = count_success    / num_simulations # proportion of successful simulations
     marginals = counts_marginals / count_success # marginal fidelities of individual purified pairs
     err_probs = counts_nb_errors / count_success # Distribution of errors across simulations : an array containing in each index i, how many errors occurred in (i-1)-bell-pair
@@ -435,15 +435,15 @@ function calculate_performance!(indiv::Individual, num_simulations::Int, purifie
     indiv_logical_qubit_fidelity = sum(err_probs[1:min(end, correctable_errors+1)]) # Calculates the logical qubit fidelity by summing the probabilities of correctable errors
 
     # TODO: find out why logical_qubit_fidelity is being set to 1
-    
+
     # Apply performance data to individual
     indiv.performance =  Performance(err_probs, err_probs[1],indiv_logical_qubit_fidelity, mean(marginals), p_success)
 
-    
-    # # debug 
+
+    # # debug
     # if (indiv.performance.logical_qubit_fidelity == 1)
     #     @warn  "logical qubit fidelity is 1. p_success: $count_success, marginals: $marginals, err_probs: $err_probs, correctable_errors: $correctable_errors"
-    # else 
+    # else
     #     @warn "valid lqf. p_success: $count_success, marginals: $marginals, err_probs: $err_probs, correctable_errors: $correctable_errors"
     # end
     # Sets the fitness value based on the optimization goal
@@ -455,7 +455,7 @@ function calculate_performance!(indiv::Individual, num_simulations::Int, purifie
         indiv.fitness =  indiv.performance.average_marginal_fidelity
     elseif optimize_for == success_probability
         indiv.fitness =  indiv.performance.success_probability
-    else 
+    else
         indiv.fitness = 0.0
     end
 
@@ -498,7 +498,7 @@ function generate_noisy_BellSwap_ops_for_individual(num_registers,valid_pairs,ca
     ##### Should num_gates:
     # num_gates = rand(1:get_starting_ops(advanced_config) - 1)  # Randomly determine the number of gates to include in each individual's circuit)
     ##### Be used here ??
-    
+
     """ Create a sequence of BellSwap gate that will effectively move the qubits from the lowest index to the highest index in a structured manner"""
     swap_gates = []
     # for i in population.r:-1:2              # The outer loop ensures that for each qubit register from the second one to the topmost one
@@ -531,7 +531,7 @@ function generate_valid_pairs(valid_qubits)
     memo = Dict{Array{Int, 1}, Array{Tuple{Int, Int}, 1}}()
     if haskey(memo, valid_qubits)
         return memo[valid_qubits]
-    
+
     else
         valid_pairs = [(valid_qubits[i], valid_qubits[i + 1]) for i in 1:2:length(valid_qubits)-1]
         memo[valid_qubits] = valid_pairs
@@ -542,7 +542,7 @@ end
 """
     long_range_entanglement_generation!(population::Population,config::Configuration)
 
-    For each individual in the population, set their operations to noisy BellSwaps. 
+    For each individual in the population, set their operations to noisy BellSwaps.
 
     The sequence of BellSwap gates that will effectively move the qubits from the lowest index to the highest index in a structured manner, and wraps the gates in noisy bellswaps.
 """
@@ -557,7 +557,7 @@ function long_range_entanglement_generation!(population::Population,config::Conf
 
 
         # num_gates = rand(1:get_starting_ops(advanced_config) - 1)  # Randomly determine the number of gates to include in each individual's circuit
-        
+
         noisy_BellSwap = generate_noisy_BellSwap_ops_for_individual(config.num_registers, valid_pairs,config.hardware_config.calibration_data)
 
         indiv.ops = noisy_BellSwap
@@ -569,7 +569,7 @@ end
 """
     initialize_pop_with_constraints!(population::Population, config::Configuration)
 
- initilize a polulation of quantum circuits with constraints about gate connectivity  and ibm noise (cnot, measurement) 
+ initilize a polulation of quantum circuits with constraints about gate connectivity  and ibm noise (cnot, measurement)
 
 It is always called with sort and cull after, so I am adding the sort and cull call to the end of this method.
 """
@@ -587,7 +587,7 @@ function initialize_pop_with_constraints!(population::Population, config::Config
     starting_ops = config.advanced_config.starting_ops
 
     reset_population!(population,config.advanced_config.population_size,config.advanced_config.starting_pop_multiplier)
-   
+
 
     """ Generate pairs defining which qubits can interact (i.e., nearest neighbors) """
     valid_pairs = generate_valid_pairs(valid_qubits)
@@ -597,7 +597,7 @@ function initialize_pop_with_constraints!(population::Population, config::Config
     Threads.@threads for indiv in population.individuals
         ###### num_gates-> this is not used, but defined here and in similar locations. Is this intended to be used ?? TODO: find out from Yipiao/Stefan
         # num_gates = rand(1:get_starting_ops(advanced_config) - 1)  # Randomly determine the number of gates to include in each individual's circuit
-       
+
         """ Create a sequence of BellSwap gate that will effectively move the qubits from the lowest index to the highest index in a structured manner, and wraps the gates in noisy bellswaps."""
         noisy_BellSwap = generate_noisy_BellSwap_ops_for_individual(num_registers,valid_pairs,calibration_data)
 
@@ -691,12 +691,12 @@ function initialize_pop_with_constraints!(population::Population, config::Config
         """ Keep BellSwap gates ordered while Randomizing the other operations to create a diverse set of quantum circuits """
         all_ops = vcat(noisy_random_gates, random_measurements)
         # noisy_random_gates_measurements = all_ops[length(noisy_BellSwap)+1:end]
-        # shuffled_ops = vcat(noisy_BellSwap, noisy_random_gates_measurements[randperm(length(noisy_random_gates_measurements))])   
+        # shuffled_ops = vcat(noisy_BellSwap, noisy_random_gates_measurements[randperm(length(noisy_random_gates_measurements))])
         shuffled_ops = vcat(all_ops[randperm(length(all_ops))])
 
         # indiv.ops =  convert(Vector{Union{PauliNoiseBellGate{CNOTPerm}, NoisyBellMeasureNoisyReset, PauliNoiseBellGate{BellSwap}}}, shuffled_ops)  # Converts the operations into a vector of gate types
 
-        # indiv.ops =  convert(QuantumOperation, shuffled_ops)  # Converts the 
+        # indiv.ops =  convert(QuantumOperation, shuffled_ops)  # Converts the
         indiv.ops = shuffled_ops
         # operations into a vector of gate types
         # TODO from Stefan: the convert above should not be necessary -- probably there is something else in the code that makes things messy if this is needed
@@ -715,7 +715,7 @@ end
 """
 function reset_selection_history!(population::Population)
     # TODO from Stefan: this list gets repeated frequently, probably it makes sense to put it in a "convenience" global variable (and as mentioned elsewhere, probably a list of symbols, not a list of strings)
-    for hist in hist_list 
+    for hist in hist_list
         population.selection_history[hist] = Vector{Int64}()
     end
 
@@ -741,10 +741,10 @@ end
 """
     run_with_constraints!(population::Population, config::Configuration)
 
-    Execution of a Genetic Algorithm Designed to Evolve a Population of Quantum Circuits 
+    Execution of a Genetic Algorithm Designed to Evolve a Population of Quantum Circuits
 """
-function run_with_constraints!(population::Population, config::Configuration) 
-    # TODO from Stefan: the fact that there is `run` but also `run_with_constraints` kinda sounds like this can be written more neatly and simply if we use "multiple dispatch"  
+function run_with_constraints!(population::Population, config::Configuration)
+    # TODO from Stefan: the fact that there is `run` but also `run_with_constraints` kinda sounds like this can be written more neatly and simply if we use "multiple dispatch"
 
     initialize_pop_with_constraints!(population, config)
 
@@ -757,7 +757,7 @@ function run_with_constraints!(population::Population, config::Configuration)
         # Produce the next generation of individuals by performing selection, crossover, mutation, and other genetic operations
         step_with_constraints!(population,config.max_ops,config.hardware_config.valid_qubits,config.purified_pairs,config.num_registers,config.hardware_config.calibration_data,config.num_simulations,config.optimize_for,config.advanced_config)
         update_selection_history!(population)
-       
+
         # Calculate performance for each individual in parallel using OhMyThreads.jl
         tmap(indiv -> calculate_performance!(indiv,
             config.num_simulations,
@@ -780,7 +780,7 @@ TBW
 """
 function run_with_constraints_history!(population::Population, config::Configuration)
     max_gen = config.max_gen
-    
+
     max_purified_fidelities_gen_dic = zeros(max_gen,1)
     min_purified_fidelities_gen_dic = zeros(max_gen,1)
     ave_purified_fidelities_gen_dic = zeros(max_gen,1)
@@ -803,16 +803,16 @@ function run_with_constraints_history!(population::Population, config::Configura
             config.advanced_config.code_distance,
             config.advanced_config.communication_fidelity_in
             ), population.individuals)
-        
+
         purified_fidelities = [perf.purified_pairs_fidelity for perf in performances]
         # Filter out NaN values
         valid_fidelities = filter(!isnan, purified_fidelities)
-        
+
         max_purified_fidelities_gen_dic[i]= maximum(valid_fidelities)
         min_purified_fidelities_gen_dic[i]= minimum(valid_fidelities)
         ave_purified_fidelities_gen_dic[i]= mean(valid_fidelities)
-        
-        # check running progress 
+
+        # check running progress
         println("Running process: generation ",i)
 
     end
@@ -852,9 +852,9 @@ function add_mutations!(individuals::Vector{Individual}, valid_qubits::Array{Int
         # For every mutation per individual, up to the limit
         for _ in 1:adv_config.mutants_per_individual_per_type
             drop_op::Bool = rand() < adv_config.p_lose_operation  && length(indiv.ops) > 0
-            gain_op::Bool = rand() < adv_config.p_add_operation  && length(indiv.ops) < max_ops 
+            gain_op::Bool = rand() < adv_config.p_add_operation  && length(indiv.ops) < max_ops
             swap_op::Bool = rand() < adv_config.p_swap_operation  && length(indiv.ops) > 0
-            mutate_op::Bool = rand() < adv_config.p_mutate_operation && length(indiv.ops) > 0 
+            mutate_op::Bool = rand() < adv_config.p_mutate_operation && length(indiv.ops) > 0
 
             new_individuals::Int = drop_op + gain_op + swap_op + mutate_op
             if new_individuals > 0
@@ -866,7 +866,7 @@ function add_mutations!(individuals::Vector{Individual}, valid_qubits::Array{Int
                     j+=1
                 end
                 if gain_op
-                    new_individuals_vec[j] = gain_op_with_constraints(indiv, calibration_data, valid_qubits, purified_pairs,num_registers,adv_config.communication_fidelity_in) 
+                    new_individuals_vec[j] = gain_op_with_constraints(indiv, calibration_data, valid_qubits, purified_pairs,num_registers,adv_config.communication_fidelity_in)
                     j+=1
                 end
                 if swap_op
@@ -876,7 +876,7 @@ function add_mutations!(individuals::Vector{Individual}, valid_qubits::Array{Int
                 if mutate_op
                     new_individuals_vec[j] = mutate_with_constraints(indiv)
                 end
- 
+
                 append!(indivContainers[i], new_individuals_vec)
             end
         end
@@ -906,12 +906,12 @@ function step_with_constraints!(population::Population, max_ops::Int,  valid_qub
     # Select pairs of parents randomly from the population
     parents = [(rand(population.individuals), rand(population.individuals)) for _ = 1:advanced_config.pairs]
     # Generate children from each pair of individuals
-    for (p1, p2) in parents # every step, adds vertically to individual vector. May be a more efficient way TODO 
+    for (p1, p2) in parents # every step, adds vertically to individual vector. May be a more efficient way TODO
         population.individuals = vcat(population.individuals, [new_child(p1, p2,max_ops,num_registers) for j = 1:advanced_config.children_per_pair])
     end
 
     add_mutations!(population.individuals,valid_qubits,purified_pairs,num_registers,max_ops,calibration_data,advanced_config)
-    
+
     # Sort the population by fitness and cull the excess individuals to maintain the population size
     simulate_and_sort!(population,num_simulations,purified_pairs,num_registers,optimize_for,advanced_config)
     cull!(population,advanced_config.population_size)
@@ -926,7 +926,7 @@ end
 """
     simulate_and_sort!(population::Population,num_simulations::Int,purified_pairs::Int,num_registers::Int,optimize_for::CostFunction,advanced_config::AdvancedConfiguration)
 
-"" Evaluate and Sort the individuals in descending order of fitness 
+"" Evaluate and Sort the individuals in descending order of fitness
 """
 function simulate_and_sort!(population::Population,num_simulations::Int,purified_pairs::Int,num_registers::Int,optimize_for::CostFunction,advanced_config::AdvancedConfiguration)
     # calculate and update each individual's performance
@@ -934,10 +934,10 @@ function simulate_and_sort!(population::Population,num_simulations::Int,purified
         calculate_performance!(indiv,
             num_simulations,
             purified_pairs,
-            num_registers, 
-            optimize_for, 
+            num_registers,
+            optimize_for,
             advanced_config.code_distance,
-            advanced_config.communication_fidelity_in) 
+            advanced_config.communication_fidelity_in)
     end
     sort_pop!(population)
 end
@@ -945,7 +945,7 @@ end
 """
     cull!(population::Population,population_size::Int)
 
-    Reduce the population size to the target population_size 
+    Reduce the population size to the target population_size
 """
 function cull!(population::Population,population_size::Int)
     population.individuals = population.individuals[1:population_size]
@@ -961,7 +961,7 @@ function new_child(indiv::Individual, indiv2::Individual, max_ops::Int,num_regis
     if length(indiv2.ops) == 0
         return deepcopy(indiv) # No crossover if one of the parents has no operations
     elseif length(indiv.ops) == 0
-        return deepcopy(indiv2) 
+        return deepcopy(indiv2)
     end
     new_indiv = deepcopy(indiv)
 
@@ -993,9 +993,9 @@ function new_child(indiv::Individual, indiv2::Individual, max_ops::Int,num_regis
     sample1 = 1:min(length(ops1), max_ops)
     if length(sample1) == 0
         return deepcopy(indiv2)
-    end   
+    end
     num_ops1 = rand(sample1)
-    
+
     sample2 = 1:min(length(ops2), max_ops - num_ops1)
     if length(sample2) == 0
         return deepcopy(indiv)
@@ -1031,7 +1031,7 @@ function swap_op_with_constraints(indiv::Individual)::Individual
         return indiv
     end
     new_indiv = deepcopy(indiv)
-    ops = indiv.ops 
+    ops = indiv.ops
 
     """ Randomly select two positions (cnot or measurement) """
     sample = [i for i in 1:length(ops) if isa(ops[i],PauliNoiseBellGate{CNOTPerm} ) || isa(ops[i], NoisyBellMeasureNoisyReset)]
@@ -1039,7 +1039,7 @@ function swap_op_with_constraints(indiv::Individual)::Individual
     if length(sample) < 2
         return indiv
     end
-    
+
     ind1 = rand(sample)
 
     # do not swap with the same operation
@@ -1054,7 +1054,7 @@ function swap_op_with_constraints(indiv::Individual)::Individual
     op1, op2 = ops[ind1], ops[ind2]
 
     """ Swap the operations """
-    
+
     new_indiv.ops[ind1] = op2
     new_indiv.ops[ind2] = op1
     new_indiv.history = "swap_m"
@@ -1096,7 +1096,7 @@ end
     gain_op_with_constraints(indiv::Individual,  calibration_data::Dict, valid_qubits::Array{Int},purified_pairs,num_registers,f_in)::Individual
 
     Add a new operation to an individual copy, and return it
-    
+
 """
 function gain_op_with_constraints(indiv::Individual,  calibration_data::Dict, valid_qubits::Array{Int},purified_pairs,num_registers,f_in)::Individual
     new_indiv = deepcopy(indiv)
@@ -1225,7 +1225,7 @@ end
 """
     mutate(gate::NoisyBellMeasureNoisyReset)
 
- The measurement component (X,Y,Z) of the gate is randomized while keeping the other parameters (p, px, py, pz) the same 
+ The measurement component (X,Y,Z) of the gate is randomized while keeping the other parameters (p, px, py, pz) the same
 """
 function mutate(gate::NoisyBellMeasureNoisyReset)
     return NoisyBellMeasureNoisyReset(rand(BellMeasure, gate.m.sidx), gate.p, gate.px, gate.py, gate.pz)
@@ -1234,7 +1234,7 @@ end
 """
     mutate(gate::PauliNoiseBellGate)
 
- The permutation component of the gate is randomized while keeping the noise parameters (px, py, pz) the same 
+ The permutation component of the gate is randomized while keeping the noise parameters (px, py, pz) the same
 """
 function mutate(gate::PauliNoiseBellGate)
     return PauliNoiseBellGate(rand(CNOTPerm, gate.g.idx1, gate.g.idx2), gate.px, gate.py, gate.pz)
@@ -1270,7 +1270,7 @@ end
 """
     refresh_noise(indiv::Individual, f_in::Float64)
 
-    Reset and return an individual's performance and fitness, and refresh the noise of their operations. 
+    Reset and return an individual's performance and fitness, and refresh the noise of their operations.
 """
 function refresh_noise(indiv::Individual, f_in::Float64)
     new_indiv = deepcopy(indiv)
