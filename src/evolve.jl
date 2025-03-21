@@ -13,6 +13,7 @@ function step!(
     purified_pairs::Int=1,
     num_simulations::Int=100,
     pop_size::Int=100,
+    noises=[NetworkFidelity(0.9)] # circuit starting fidelity
 )
     # Mark existing individuals as survivors
     # Survivors ensure that some individuals are carried over unchanged, maintaining good solutions
@@ -30,7 +31,7 @@ function step!(
         num_simulations,
         purified_pairs,
         number_registers, # TODO (low priority) this should be by-default derived from `indiv`
-        noises=[NetworkFidelity(0.9)] # TODO configurable noise
+        noises=noises
     )
     cull!(population, pop_size)
 end

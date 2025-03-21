@@ -38,6 +38,8 @@ function calculate_performance!(
         end
     end
 
+    err_probs = counts_nb_errors / count_success   # an array containing in each index i, how many errors occurred in i'th pair
+
     if count_success == 0
         indiv.performance =  Performance(err_probs, 0,0, 0, 0)
         return indiv.performance
@@ -45,7 +47,6 @@ function calculate_performance!(
 
     p_success = count_success    / num_simulations # proportion of successful simulations
     marginals = counts_marginals / count_success   # marginal fidelities of individual purified pairs
-    err_probs = counts_nb_errors / count_success   # an array containing in each index i, how many errors occurred in i'th pair
 
     correctable_errors = div(code_distance  - 1, 2) # maximum number of correctable errors based on code distance after teleportation
     indiv_logical_qubit_fidelity = sum(err_probs[1:min(end, correctable_errors+1)]) # calculates the logical qubit fidelity by summing the probabilities of correctable errors
