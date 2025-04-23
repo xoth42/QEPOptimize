@@ -14,11 +14,11 @@ function mutate(indiv::Individual)
 end
 
 function mutate(gate::BellMeasure)
-    return rand(BellMeasure, gate.m.sidx) # TODO (low priority) this `rand` is a "pun"; should be changed to use a keyword argument to specify affected qubit, but that is a breaking change in BPGates.jl
+    return rand(BellMeasure, gate.sidx) # TODO (low priority) this `rand` is a "pun"; should be changed to use a keyword argument to specify affected qubit, but that is a breaking change in BPGates.jl
 end
 
 function mutate(gate::CNOTPerm)
-    return rand(CNOTPerm, gate.g.idx1, gate.g.idx2) # TODO (low priority) this `rand` is a "pun"; should be changed to use a keyword argument to specify affected qubit, but that is a breaking change in BPGates.jl
+    return rand(CNOTPerm, gate.idx1, gate.idx2) # TODO (low priority) this `rand` is a "pun"; should be changed to use a keyword argument to specify affected qubit, but that is a breaking change in BPGates.jl
 end
 
 

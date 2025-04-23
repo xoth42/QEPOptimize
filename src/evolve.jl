@@ -9,10 +9,16 @@ while respecting constraints (such as gate connectivity and noise calibration)
 function step!(
     population::Population;
     max_ops::Int=5,
-    number_registers::Int=1,
+    number_registers::Int=2,
     purified_pairs::Int=1,
     num_simulations::Int=100,
     pop_size::Int=100,
+    code_distance::Int=1,
+    noises=[NetworkFidelity(0.9)],
+    new_mutants::Int=10,
+    p_drop=0.1,
+    p_mutate=0.1,
+    p_gain=0.1,
 )
     # Mark existing individuals as survivors
     # Survivors ensure that some individuals are carried over unchanged, maintaining good solutions
@@ -48,16 +54,19 @@ function add_mutations!(
     mutants = Individual[]
 
     # For every mutation per individual, up to the limit
-    for _ in 1:new_mutants
-        l = length(indiv.ops)
-        drop_op::Bool   = rand() < p_drop   && l > 0
-        gain_op::Bool   = rand() < p_gain   && l < max_ops
-        # swap_op::Bool   = TODO
-        mutate_op::Bool = rand() < p_mutate && l > 0
+    for old_indiv in individuals
+        for _ in 1:new_mutants
+            indiv = copy(old_indiv)
+            l = length(indiv.ops)
+            _drop_op::Bool   = rand() < p_drop   && l > 0
+            _gain_op::Bool   = rand() < p_gain   && l < max_ops
+            # swap_op::Bool   = TODO
+            _mutate::Bool = rand() < p_mutate && l > 0
 
-        drop_op && push!(mutants, drop_op(indiv))
-        gain_op && push!(mutants, gain_op(indiv; valid_pairs))
-        mutate_op && push!(mutants, mutate(indiv))
+            _drop_op && push!(mutants, drop_op(indiv))
+            _gain_op && push!(mutants, gain_op(indiv; valid_pairs))
+            _mutate && push!(mutants, mutate(indiv))
+        end
     end
 
     ## add all children back to the individuals vector
@@ -74,7 +83,7 @@ function simulate_and_sort!(
     population::Population;
     num_simulations::Int=100,
     purified_pairs::Int=1,
-    number_registers::Int=1, # TODO (low priority) this should be by-default derived from `indiv`
+    number_registers::Int=2, # TODO (low priority) this should be by-default derived from `indiv`
     code_distance::Int=1,
     noises=[NetworkFidelity(0.9)]
 )

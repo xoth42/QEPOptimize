@@ -40,7 +40,7 @@ Individual(history::Symbol) = Individual(history, [])
 Individual(ops::Vector) = Individual(:manual, ops, Performance(), 0.0)
 Individual(history::Symbol, ops) = Individual(history, ops, Performance(), 0.0)
 
-Base.copy(i::Individual) = Individual(i.history, copy(i.ops), copy(i.performance), fitness)
+Base.copy(i::Individual) = Individual(i.history, copy(i.ops), copy(i.performance), i.fitness)
 
 
 mutable struct Population
