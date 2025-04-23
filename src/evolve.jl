@@ -79,8 +79,8 @@ function simulate_and_sort!(
     noises=[NetworkFidelity(0.9)]
 )
     # calculate and update each individual's performance
-    Threads.@threads for indiv in population.individuals
-        calculate_performance!(indiv,
+    #=Threads.@threads=# for indiv in population.individuals
+        calculate_performance!(indiv;
             num_simulations,
             purified_pairs,
             number_registers,
@@ -104,7 +104,7 @@ function initialize_pop!(
     population::Population;
     start_ops::Int=10,
     start_pop_size::Int=1000,
-    number_registers::Int=1,
+    number_registers::Int=2,
     pop_size::Int=100,
     num_simulations::Int=100,
     purified_pairs::Int=1,
@@ -113,11 +113,14 @@ function initialize_pop!(
 )
     valid_pairs=1:number_registers # TODO (low priority) decouple valid_pairs from number_registers
 
+    number_registers >= 2 || throw(ArgumentError("number_registers must be >= 2"))
+
     for _ in 1:start_pop_size
         indiv = Individual(:random)
         for _ in 1:start_ops
             push!(indiv.ops, rand_op(valid_pairs))
         end
+        push!(population.individuals, indiv)
     end
 
     simulate_and_sort!(
