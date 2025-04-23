@@ -35,6 +35,9 @@ noisify(n::NetworkPauliNoise, b::BellMeasure) = NoisyBellMeasureNoisyReset(b, 0,
 noisify(n::NetworkPauliNoise, b::NoisyBellMeasureNoisyReset) = NoisyBellMeasureNoisyReset(b.m, b.p, n.px, n.py, n.pz)
 
 
+noisify(n::PauliNoise, c::CNOTPerm) = PauliNoiseBellGate(c, n.px, n.py, n.pz) # TODO reusing the QuantumClifford way of making noisy gates would be more consistent here
+
+
 # TODO more types of noise should be implemented
     # gate_fidelity would turn CNOTPerm gates into gates wrapped into noise
     # T1/T2 noise will add noise that happens even during wait time

@@ -1,25 +1,23 @@
 using QEPOptimize
-
 using QEPOptimize: initialize_pop!, step!, NetworkFidelity # TODO export these
+using BPGates: PauliNoise # TODO re-export from QEPOptimize
 
 using CairoMakie
-
 using Quantikz: displaycircuit
-
 using DataStructures: counter
 
 ##
 
 config = (;
-    num_simulations=100,
+    num_simulations=1000, # needs to be large enough to resolve circuit noise but you can make smaller too # TODO anneal this and save old results
     number_registers=4, # do 3 for something faster
     purified_pairs=1,
     code_distance=1,
-    noises=[NetworkFidelity(0.9)],
+    pop_size = 20,
+    noises=[NetworkFidelity(0.9), PauliNoise(0.01/3, 0.01/3, 0.01/3)],
 )
 
 init_config = (;
-    pop_size = 100,
     start_ops = 10,
     start_pop_size = 1000,
     config...
@@ -42,7 +40,7 @@ initialize_pop!(pop; init_config...)
 
 ##
 
-STEPS = 200
+STEPS = 80
 fitness_history = Matrix{Float64}(undef, STEPS+1, init_config.pop_size)
 fitness_history[1, :] = [i.fitness for i in pop.individuals]
 transition_counts = []
@@ -91,7 +89,7 @@ fig
 ##
 
 best_circuit = pop.individuals[1]
-Quantikz.displaycircuit(best_circuit.ops)
+displaycircuit(best_circuit.ops)
 
 ##
 
@@ -100,7 +98,7 @@ f_outs = Float64[]
 probs = Float64[]
 num_simulations = 100000
 for f in f_ins
-    noises = [NetworkFidelity(f)]
+    noises = [NetworkFidelity(f), PauliNoise(0.01/3, 0.01/3, 0.01/3)] # TODO plot multiple curves for different levels of Pauli Noise
     p = calculate_performance!(best_circuit; num_simulations, noises, config.number_registers, config.purified_pairs)
     push!(f_outs, p.purified_pairs_fidelity)
     push!(probs, p.success_probability)
