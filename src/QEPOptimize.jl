@@ -1,4 +1,4 @@
-module QEPO
+module QEPOptimize
 
 using BPGates
 using BPGates: mctrajectory!, continue_stat # TODO these should be exported by default
