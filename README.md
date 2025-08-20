@@ -1,3 +1,5 @@
+# Moved to https://github.com/QuantumSavory/QEPOptimize.jl
+
 ## Quantum Entanglement Purification Optimizer
 
 
